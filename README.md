@@ -6,7 +6,7 @@ A field-service assistant that catches missing warranty evidence while an ice-ma
 
 Download the visit, choose **Work offline**, and send the example note. Pick one of the two serials and tell the assistant the manager already left. Reload to see **Awaiting signature** survive. Use the example signed PDF to finish the closeout and try the lost-response retry. The browser demo uses a sample parser and simulated sync.
 
-**Measured on Apple M1 Pro:** 41 / 41 repair extraction checks, 12 / 12 correct next actions, and 2.60 s median local inference across 16 warm turns. [Evaluation](docs/evaluation.md)
+**Measured on Apple M1 Pro:** 41 / 41 repair extraction checks, 12 / 12 correct next actions, and 2.62 s median local inference across 16 warm turns. [Evaluation](docs/evaluation.md)
 
 [![Offline closeout showing the missing customer signature and the Hoshizaki source citation](docs/awaiting-signature.webp)](https://guhanp09.github.io/offline-warranty-closeout/)
 

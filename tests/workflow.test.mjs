@@ -92,6 +92,15 @@ test('signature and serial corrections cannot overwrite previous model observati
   assert.equal(state.draft.attestation, null);
 });
 
+test('a pump motor observation does not inherit the issued circulation pump part number', () => {
+  const state = prep();
+  conversationTurn(state, 'The kitchen ice machine had no ice. I replaced the pump motor. Cycle passed. 35 minutes.', {
+    complaint: 'No ice', remedy: 'Replaced the pump motor', part: 'pump motor', outcome: 'Cycle passed', laborMinutes: 35,
+  });
+  assert.equal(state.draft.fields.partNumber, undefined);
+  assert.equal(check(state, 'parts').ok, false);
+});
+
 test('matching attachment and explicit technician attestation plus approval are independent gates', async () => {
   const state = prep();
   say(state, note + ' 17042.');

@@ -30,9 +30,9 @@
     "fields": 62,
     "decisionsCorrect": 12,
     "latencyMs": {
-      "warmup": 2722,
-      "median": 2600,
-      "p95": 3596
+      "warmup": 4009,
+      "median": 2616,
+      "p95": 3076
     },
     "invalidOrFailedResponses": 0
   },
@@ -80,7 +80,7 @@
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2417,
+          "latencyMs": 2374,
           "inputTokens": 468,
           "outputTokens": 76
         }
@@ -147,21 +147,21 @@
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 3136,
+          "latencyMs": 2616,
           "inputTokens": 463,
           "outputTokens": 87
         },
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2391,
+          "latencyMs": 2302,
           "inputTokens": 477,
           "outputTokens": 75
         },
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2891,
+          "latencyMs": 2854,
           "inputTokens": 515,
           "outputTokens": 90
         }
@@ -216,7 +216,7 @@
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2848,
+          "latencyMs": 2801,
           "inputTokens": 467,
           "outputTokens": 91
         }
@@ -265,7 +265,7 @@
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2354,
+          "latencyMs": 2368,
           "inputTokens": 451,
           "outputTokens": 77
         }
@@ -320,7 +320,7 @@
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2510,
+          "latencyMs": 2526,
           "inputTokens": 469,
           "outputTokens": 76
         }
@@ -375,14 +375,14 @@
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2709,
+          "latencyMs": 2578,
           "inputTokens": 461,
           "outputTokens": 83
         },
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2241,
+          "latencyMs": 2393,
           "inputTokens": 543,
           "outputTokens": 65
         }
@@ -425,7 +425,7 @@
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2600,
+          "latencyMs": 2701,
           "inputTokens": 467,
           "outputTokens": 85
         }
@@ -468,7 +468,7 @@
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2554,
+          "latencyMs": 2666,
           "inputTokens": 471,
           "outputTokens": 71
         }
@@ -511,7 +511,7 @@
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 3596,
+          "latencyMs": 2985,
           "inputTokens": 471,
           "outputTokens": 95
         }
@@ -548,7 +548,7 @@
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 3182,
+          "latencyMs": 2852,
           "inputTokens": 462,
           "outputTokens": 93
         }
@@ -597,14 +597,14 @@
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2471,
+          "latencyMs": 2450,
           "inputTokens": 457,
           "outputTokens": 79
         },
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2850,
+          "latencyMs": 2944,
           "inputTokens": 528,
           "outputTokens": 86
         }
@@ -659,7 +659,7 @@
         {
           "model": "qwen3:4b",
           "promptVersion": "1.2.0",
-          "latencyMs": 2652,
+          "latencyMs": 3076,
           "inputTokens": 466,
           "outputTokens": 87
         }

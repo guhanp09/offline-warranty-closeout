@@ -6,7 +6,7 @@ Measured on 26 November 2026 on a MacBook Pro with Apple M1 Pro and 16 GiB RAM, 
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 1.0.0 · native tool call | 4 / 41 | 17 / 62 | 3 / 12 | 10.51 s / 12.25 s | 16 / 16 |
 | 1.1.0 · schema-constrained output | 37 / 41 | 56 / 62 | 9 / 12 | 2.68 s / 3.69 s | 0 / 16 |
-| 1.2.0 · structured output with workflow guards | 41 / 41 | 62 / 62 | 12 / 12 | 2.60 s / 3.60 s | 0 / 16 |
+| 1.2.0 · structured output with workflow guards | 41 / 41 | 62 / 62 | 12 / 12 | 2.62 s / 3.08 s | 0 / 16 |
 
 Repair extraction covers problem, remedy, operational result, duration, part mention, no-parts assertion and an explicit exception. The broader score includes selected Work Order, parts fields derived from cached stock, signature availability, attestation and outbox invariants. Labels use exact comparisons for identifiers, numbers and booleans and keyword patterns for free text. Decisions use the next assistant action after each labeled conversation. Latency is measured around local inference requests after a warm-up. [Cases](../evals/cases.mjs) · [Native results](../evals/results/native-tools.json) · [Structured results](../evals/results/structured.json) · [Guarded results](../evals/results/guarded.json)
 

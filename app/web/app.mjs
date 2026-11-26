@@ -121,6 +121,11 @@ function readEdits(form) {
 function validatePreview() {
   const form = $('review');
   if (!form || state.outbox) return;
+  for (const name of ['partNumber', 'partQty']) {
+    const input = form.elements[name];
+    input.disabled = form.elements.noParts.checked;
+    input.closest('label').hidden = input.disabled;
+  }
   const label = $('review-validation');
   try {
     const copy = structuredClone(state);

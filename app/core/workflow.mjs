@@ -140,8 +140,9 @@ function writeField(state, key, value, origin = 'technician') {
 function applyIssuedPart(state, order) {
   const { fields } = state.draft;
   const part = order?.issuedPart;
-  if (part && fields.part && /\bpump\b/i.test(fields.part) && !fields.noParts
-    && !/\b(?:drain|remote|condensate|booster|recirculation motor)\b/i.test(fields.part)) {
+  const label = fields.part?.toLowerCase().replace(/^(?:(?:the|a|new|replacement|one)\s+)+/, '');
+  const isIssuedPump = ['pump', 'water pump', 'circulation pump', 'water circulation pump'].includes(label);
+  if (part && isIssuedPump && !fields.noParts) {
     if (!fields.partNumber) writeField(state, 'partNumber', part.number, 'cached job');
     if (!fields.partQty && fields.partNumber === part.number) writeField(state, 'partQty', part.quantity, 'cached job');
   }
