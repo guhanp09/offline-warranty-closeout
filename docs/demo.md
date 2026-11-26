@@ -2,7 +2,7 @@
 
 Choose **Start guided demo** in the browser for a two-minute walkthrough with a sample parser and simulated sync. The guide follows your progress and offers a reload while the draft is awaiting a signature. You can hide it or reopen it at any stage.
 
-[Start the guided demo](https://guhanp09.github.io/offline-warranty-closeout/) · [Watch the live Salesforce handoff](https://github.com/guhanp09/offline-warranty-closeout/releases/tag/v1.0.1)
+[Start the guided demo](https://guhanp09.github.io/offline-warranty-closeout/) · [Watch the live Salesforce handoff](https://guhanp09.github.io/offline-warranty-closeout/walkthrough/)
 
 ## Run the live workflow
 

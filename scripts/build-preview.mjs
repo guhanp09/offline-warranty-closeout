@@ -1,14 +1,20 @@
 import { createHash } from 'node:crypto';
 import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
+import { chipSvg } from '../app/web/chip.mjs';
 
 const project = new URL('../', import.meta.url);
 const dist = new URL('../dist/', import.meta.url);
 const assets = [
-  ...['app.mjs', 'client.mjs', 'mic.mjs', 'ui.mjs', 'guide.mjs', 'styles.css', 'icon.svg'].map((name) => 'app/web/' + name),
+  ...['app.mjs', 'client.mjs', 'mic.mjs', 'ui.mjs', 'guide.mjs', 'scene.mjs', 'chip.mjs', 'landing.mjs', 'styles.css', 'icon.svg'].map((name) => 'app/web/' + name),
   ...['actions.mjs', 'evidence.mjs', 'observations.mjs', 'sync.mjs', 'workflow.mjs'].map((name) => 'app/core/' + name),
   ...['visit.mjs', 'procedure.mjs', 'signed-work-order-17042.pdf', 'signed-work-order-17086.pdf'].map((name) => 'fixtures/' + name),
 ];
+// The recorded Salesforce walkthrough plays in the browser. It is served from the network, not the offline cache.
+const walkthrough = {
+  'walkthrough/salesforce.mp4': 'docs/salesforce-walkthrough.mp4',
+  'walkthrough/poster.jpg': 'docs/salesforce-walkthrough.jpg',
+};
 
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist);
@@ -20,6 +26,12 @@ for (const path of assets) {
   await copyFile(new URL(path, project), new URL(path, dist));
   digest.update(await readFile(new URL(path, project)));
 }
+await mkdir(new URL('walkthrough/', dist));
+for (const [target, source] of Object.entries(walkthrough)) await copyFile(new URL(source, project), new URL(target, dist));
+// Chip is drawn into the static page from the same module the app uses, so the two never drift apart.
+const watchPage = (await readFile(new URL('app/web/walkthrough.html', project), 'utf8'))
+  .replace(/<!--chip:(\w+)-->/g, (_, mood) => chipSvg({ mood, size: 92 }));
+await writeFile(new URL('walkthrough/index.html', dist), watchPage);
 const cacheKey = 'owc-preview-' + digest.digest('hex').slice(0, 12);
 await writeFile(new URL('sw.js', dist), `
 const cacheKey = ${JSON.stringify(cacheKey)};

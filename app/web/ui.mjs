@@ -1,4 +1,5 @@
 import { draftStatus, retrieveProcedure, selectedOrder } from '../core/workflow.mjs';
+import { chipSvg } from './chip.mjs';
 
 const paths = {
   chat: '<path d="M21 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-3 2 1.5-4.4A7.5 7.5 0 0 1 2 11.5 7.5 7.5 0 0 1 9.5 4h4a7.5 7.5 0 0 1 7.5 7.5Z"/><path d="M7 10h9m-9 4h5"/>',
@@ -19,6 +20,7 @@ const paths = {
   external: '<path d="M13 4h7v7m0-7-9 9m7 0v7H4V6h7"/>',
   close: '<path d="m6 6 12 12M6 18 18 6"/>',
   refresh: '<path d="M19 8a8 8 0 1 0 1 7m-1-7V3m0 5h-5"/>',
+  play: '<path d="M8.5 5.6v12.8a.8.8 0 0 0 1.2.7l10-6.4a.8.8 0 0 0 0-1.4l-10-6.4a.8.8 0 0 0-1.2.7Z" fill="currentColor" stroke="none"/>',
 };
 
 export function icon(name, size = 18) {
@@ -45,7 +47,7 @@ export function headerUi(state, config) {
   const order = selectedOrder(state);
   const status = state.outbox?.status === 'synced' && config.remote === 'simulation' ? 'Simulation verified' : draftStatus(state);
   const tone = ['Awaiting signature', 'Needs review', 'Sign-in needed'].includes(status) ? 'amber'
-    : ['Synced', 'Simulation verified', 'Ready to review'].includes(status) ? 'teal' : 'slate';
+    : ['Synced', 'Simulation verified', 'Ready to review'].includes(status) ? 'good' : 'slate';
   return `<div class="visit-header">
     <div>
       <p class="visit-kicker">Field service <span> / </span> ${config.mode === 'preview' ? 'Browser demo' : 'Demo visit'}</p>
@@ -58,14 +60,14 @@ export function headerUi(state, config) {
 
 export function threadUi(state, busy) {
   if (!state.visit) return `<div class="start">
-    <div class="start-mark">${icon('box', 29)}</div>
+    <div class="start-mark">${chipSvg({ mood: 'wave', size: 92 })}</div>
     <h3>Prepare the visit</h3>
     <p>Two same-model ice machines are on this assignment. Save their work orders and the Hoshizaki procedure before heading offline.</p>
     ${button('prepare', busy ? 'Downloading…' : 'Download demo visit', 'button-primary', 'download')}
   </div>`;
   const content = state.messages.map((entry) => entry.role === 'technician'
     ? `<article class="message technician"><div class="message-body"><div class="message-label">You</div><p>${esc(entry.text)}</p></div></article>`
-    : `<article class="message assistant"><div class="avatar">${icon('chat', 16)}</div><div class="message-body">
+    : `<article class="message assistant"><div class="avatar">${chipSvg({ mood: 'happy', size: 32, variant: 'head' })}</div><div class="message-body">
       <div class="message-label">Assistant</div><p>${esc(entry.text)}</p>
       ${entry.source ? '<button type="button" class="source-link" data-action="source">' + icon('doc', 14) + ' Hoshizaki · p. 3, item F</button>' : ''}
     </div></article>`).join('');
@@ -215,7 +217,7 @@ export function repairSummaryUi(fields) {
   return rows.map(([label, value]) => `<div><dt>${label}</dt><dd>${esc(value)}</dd></div>`).join('');
 }
 
-export function reviewUi(state, config, compact = false) {
+export function reviewUi(state, config, compact = false, hint = '') {
   const order = selectedOrder(state);
   const { fields, origins, file, attestation } = state.draft;
   const locked = !!state.outbox;
@@ -241,7 +243,9 @@ export function reviewUi(state, config, compact = false) {
     <dl class="review-summary" id="repair-summary">${repairSummaryUi(fields)}</dl>
     <details><summary>${locked ? 'View all closeout fields' : 'View or edit all fields'}</summary>${formFields}</details>
   </div>` : formFields;
+  const guided = hint && !locked;
   return dialogFrame(locked ? 'Approved closeout' : 'Review closeout', `<form id="review" class="dialog-body">
+    ${guided ? `<p class="dialog-tour">${chipSvg({ mood: 'proud', size: 40, variant: 'head' })}<span>${esc(hint)}</span></p>` : ''}
     <div class="review-identity">
       ${locked ? `<div><b>${esc(order?.ticket)}</b> · ${esc(order?.serial)} · ${esc(order?.model)}</div>`
       : `<label><span>Work order &amp; serial <small class="field-origin">cached job</small></span>
@@ -255,7 +259,7 @@ export function reviewUi(state, config, compact = false) {
       ${icon('signature', 21)}<div><strong>Signed work order</strong><p>${file ? esc(file.name) + (attestation ? ' · Attested by technician' : ' · Confirmation pending') : 'Awaiting attachment'}</p></div>
       ${file ? button('view-evidence', 'Open', 'button-text', 'external') : ''}
     </div>
-    ${locked ? '' : `<div class="approval">
+    ${locked ? '' : `<div class="approval${guided ? ' tour-spot tour-spot-enter' : ''}"${guided ? ' data-spot="Your approval"' : ''}>
       <p id="review-validation" class="form-note"></p>
       <label><input type="checkbox" id="approve-consent"> I approve transferring these fields and this signed document to ${config.remote === 'salesforce' ? 'Salesforce' : 'the demo destination'}.</label>
       <div class="signature-actions">

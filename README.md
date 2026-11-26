@@ -2,11 +2,11 @@
 
 A field-service assistant that catches a missing customer signature while the technician is still on site. It ties the repair to the right machine and verifies the Salesforce handoff after reconnecting.
 
-**[Start the guided demo](https://guhanp09.github.io/offline-warranty-closeout/)** · [Watch the 75-second Salesforce walkthrough](https://github.com/guhanp09/offline-warranty-closeout/releases/tag/v1.0.1)
+**[Start the guided demo](https://guhanp09.github.io/offline-warranty-closeout/)** · [Watch the 75-second Salesforce walkthrough](https://guhanp09.github.io/offline-warranty-closeout/walkthrough/)
 
 About 2 minutes. No install or sign-in. The demo uses sample data and simulated sync.
 
-[![The guided demo shows an offline draft awaiting a customer signature, with the Hoshizaki requirement cited beside the repair notes](docs/awaiting-signature.webp)](https://guhanp09.github.io/offline-warranty-closeout/)
+[![Offline in the guided demo: Chip, the guide, flags the missing customer signature and cites Hoshizaki page 3, item F beside the repair notes](docs/awaiting-signature.webp)](https://guhanp09.github.io/offline-warranty-closeout/)
 
 In the demo, you’ll identify one of two same-model machines, reload an offline draft that’s awaiting a signature, and recover from a lost sync response.
 

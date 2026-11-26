@@ -42,4 +42,4 @@ On 26 November 2026, the full metadata package deployed to a fresh Trailhead Dev
 | After Salesforce accepted the write and the test dropped the response | 1 | 1 | 1 |
 | After retry verified and marked the outbox synced | 2 | 1 | 1 |
 
-Both reads returned the same closeout and Work Order. The downloaded PDF matched the approved file's SHA-256, `6686d82cf6f27c29bfa6b80b969a9e70c3a17fdaacb843ead69355c23c0f2dd4`. The walkthrough shows the **Ready for coordinator review** record and its **Files (1)** list in Salesforce. [Live walkthrough](https://github.com/guhanp09/offline-warranty-closeout/releases/tag/v1.0.1) · [Reproduce the live test](salesforce.md#verify-the-live-write)
+Both reads returned the same closeout and Work Order. The downloaded PDF matched the approved file's SHA-256, `6686d82cf6f27c29bfa6b80b969a9e70c3a17fdaacb843ead69355c23c0f2dd4`. The walkthrough shows the **Ready for coordinator review** record and its **Files (1)** list in Salesforce. [Live walkthrough](https://guhanp09.github.io/offline-warranty-closeout/walkthrough/) · [Reproduce the live test](salesforce.md#verify-the-live-write)
