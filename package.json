@@ -1,0 +1,18 @@
+{
+  "name": "offline-warranty-closeout",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.13.0 <25" },
+  "scripts": {
+    "start": "node app/server/main.mjs",
+    "demo": "node app/server/main.mjs --demo",
+    "test": "node --test tests/*.test.mjs",
+    "setup": "bash scripts/setup-mac.sh",
+    "preview:build": "node scripts/build-preview.mjs",
+    "check:offline": "bash scripts/check-offline.sh",
+    "eval": "node evals/run.mjs",
+    "sf:seed": "node scripts/salesforce.mjs seed",
+    "sf:verify": "node scripts/salesforce.mjs verify"
+  }
+}

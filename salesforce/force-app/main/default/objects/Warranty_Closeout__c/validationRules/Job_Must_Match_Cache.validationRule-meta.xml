@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Job_Must_Match_Cache</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(
+  ISNEW(),
+  OR(
+    ISBLANK(Work_Order__c),
+    ISBLANK(Work_Order_Revision__c),
+    ISBLANK(Asset_Revision__c),
+    ISBLANK(Account_Revision__c),
+    Work_Order_Revision__c &lt;&gt; Work_Order__r.LastModifiedDate,
+    Asset_Revision__c &lt;&gt; Work_Order__r.Asset.LastModifiedDate,
+    Account_Revision__c &lt;&gt; Work_Order__r.Account.LastModifiedDate,
+    Asset_Serial__c &lt;&gt; Work_Order__r.Asset.SerialNumber,
+    ISPICKVAL(Work_Order__r.Status, "Canceled"),
+    ISPICKVAL(Work_Order__r.Status, "Cancelled")
+  )
+)</errorConditionFormula>
+    <errorMessage>OWC_JOB_CHANGED: Reopen the current work order and approve the closeout again.</errorMessage>
+</ValidationRule>

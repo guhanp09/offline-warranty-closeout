@@ -1,0 +1,10 @@
+.data/
+.env
+.env.*
+.sf/
+.sfdx/
+node_modules/
+dist/
+.DS_Store
+*.sqlite*
+*.log

@@ -1,0 +1,669 @@
+{
+  "hardware": {
+    "cpu": "Apple M1 Pro",
+    "memoryGiB": 16,
+    "arch": "arm64",
+    "os": "darwin",
+    "release": "25.3.0",
+    "node": "v24.13.0"
+  },
+  "model": {
+    "name": "qwen3:4b",
+    "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen3",
+      "families": [
+        "qwen3"
+      ],
+      "parameter_size": "4.0B",
+      "quantization_level": "Q4_K_M"
+    },
+    "ollama": "0.15.4"
+  },
+  "prompt": "1.2.0",
+  "totals": {
+    "cases": 12,
+    "turns": 16,
+    "fieldsCorrect": 62,
+    "fields": 62,
+    "decisionsCorrect": 12,
+    "latencyMs": {
+      "warmup": 2722,
+      "median": 2600,
+      "p95": 3596
+    },
+    "invalidOrFailedResponses": 0
+  },
+  "cases": [
+    {
+      "id": "two-same-model-machines",
+      "fields": [
+        {
+          "field": "complaint",
+          "expected": "/ice/",
+          "actual": "ice machine wasn’t making ice",
+          "correct": true
+        },
+        {
+          "field": "remedy",
+          "expected": "/pump/",
+          "actual": "changed the pump",
+          "correct": true
+        },
+        {
+          "field": "outcome",
+          "expected": "/ice|cycle/",
+          "actual": "making ice again",
+          "correct": true
+        },
+        {
+          "field": "laborMinutes",
+          "expected": 40,
+          "actual": 40,
+          "correct": true
+        },
+        {
+          "field": "orderId",
+          "expected": null,
+          "actual": null,
+          "correct": true
+        }
+      ],
+      "next": {
+        "expected": "identify",
+        "actual": "identify",
+        "correct": true
+      },
+      "turns": [
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2417,
+          "inputTokens": 468,
+          "outputTokens": 76
+        }
+      ]
+    },
+    {
+      "id": "site-manager-left",
+      "fields": [
+        {
+          "field": "complaint",
+          "expected": "/ice/",
+          "actual": "ice machine wasn’t making ice",
+          "correct": true
+        },
+        {
+          "field": "remedy",
+          "expected": "/pump/",
+          "actual": "changed the pump",
+          "correct": true
+        },
+        {
+          "field": "outcome",
+          "expected": "/ice/",
+          "actual": "making ice again",
+          "correct": true
+        },
+        {
+          "field": "laborMinutes",
+          "expected": 40,
+          "actual": 40,
+          "correct": true
+        },
+        {
+          "field": "partNumber",
+          "expected": "DEMO-PUMP-01",
+          "actual": "DEMO-PUMP-01",
+          "correct": true
+        },
+        {
+          "field": "partQty",
+          "expected": 1,
+          "actual": 1,
+          "correct": true
+        },
+        {
+          "field": "signatureUnavailable",
+          "expected": true,
+          "actual": true,
+          "correct": true
+        },
+        {
+          "field": "orderId",
+          "expected": "OWC-DEMO-1042",
+          "actual": "OWC-DEMO-1042",
+          "correct": true
+        }
+      ],
+      "next": {
+        "expected": "signature-deferred",
+        "actual": "signature-deferred",
+        "correct": true
+      },
+      "turns": [
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 3136,
+          "inputTokens": 463,
+          "outputTokens": 87
+        },
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2391,
+          "inputTokens": 477,
+          "outputTokens": 75
+        },
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2891,
+          "inputTokens": 515,
+          "outputTokens": 90
+        }
+      ]
+    },
+    {
+      "id": "paraphrased-and-spoken-duration",
+      "fields": [
+        {
+          "field": "complaint",
+          "expected": "/ice|cube/",
+          "actual": "Unit 17,086 stopped producing cubes",
+          "correct": true
+        },
+        {
+          "field": "remedy",
+          "expected": "/pump/",
+          "actual": "Fitted a replacement circulation pump",
+          "correct": true
+        },
+        {
+          "field": "outcome",
+          "expected": "/harvest|bin|cycle/",
+          "actual": "It harvested a full bin on the next cycle",
+          "correct": true
+        },
+        {
+          "field": "laborMinutes",
+          "expected": 30,
+          "actual": 30,
+          "correct": true
+        },
+        {
+          "field": "partNumber",
+          "expected": "DEMO-PUMP-01",
+          "actual": "DEMO-PUMP-01",
+          "correct": true
+        },
+        {
+          "field": "orderId",
+          "expected": "OWC-DEMO-1086",
+          "actual": "OWC-DEMO-1086",
+          "correct": true
+        }
+      ],
+      "next": {
+        "expected": "signature",
+        "actual": "signature",
+        "correct": true
+      },
+      "turns": [
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2848,
+          "inputTokens": 467,
+          "outputTokens": 91
+        }
+      ]
+    },
+    {
+      "id": "proposed-replacement",
+      "fields": [
+        {
+          "field": "complaint",
+          "expected": "/ice/",
+          "actual": "Kitchen unit has no ice",
+          "correct": true
+        },
+        {
+          "field": "remedy",
+          "expected": null,
+          "actual": null,
+          "correct": true
+        },
+        {
+          "field": "part",
+          "expected": null,
+          "actual": null,
+          "correct": true
+        },
+        {
+          "field": "partNumber",
+          "expected": null,
+          "actual": null,
+          "correct": true
+        },
+        {
+          "field": "orderId",
+          "expected": "OWC-DEMO-1042",
+          "actual": "OWC-DEMO-1042",
+          "correct": true
+        }
+      ],
+      "next": {
+        "expected": "repair",
+        "actual": "repair",
+        "correct": true
+      },
+      "turns": [
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2354,
+          "inputTokens": 451,
+          "outputTokens": 77
+        }
+      ]
+    },
+    {
+      "id": "negated-installation",
+      "fields": [
+        {
+          "field": "complaint",
+          "expected": "/water|block/",
+          "actual": "water feed to the kitchen machine was blocked",
+          "correct": true
+        },
+        {
+          "field": "remedy",
+          "expected": "/inlet|screen/",
+          "actual": "cleared the inlet screen",
+          "correct": true
+        },
+        {
+          "field": "outcome",
+          "expected": "/pass|cycle/",
+          "actual": "first cycle passed",
+          "correct": true
+        },
+        {
+          "field": "laborMinutes",
+          "expected": 22,
+          "actual": 22,
+          "correct": true
+        },
+        {
+          "field": "noParts",
+          "expected": true,
+          "actual": true,
+          "correct": true
+        },
+        {
+          "field": "part",
+          "expected": null,
+          "actual": null,
+          "correct": true
+        }
+      ],
+      "next": {
+        "expected": "signature",
+        "actual": "signature",
+        "correct": true
+      },
+      "turns": [
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2510,
+          "inputTokens": 469,
+          "outputTokens": 76
+        }
+      ]
+    },
+    {
+      "id": "corrected-serial-and-labor",
+      "fields": [
+        {
+          "field": "orderId",
+          "expected": "OWC-DEMO-1086",
+          "actual": "OWC-DEMO-1086",
+          "correct": true
+        },
+        {
+          "field": "complaint",
+          "expected": "/ice/",
+          "actual": "17086 was not producing ice",
+          "correct": true
+        },
+        {
+          "field": "remedy",
+          "expected": "/pump/",
+          "actual": "Swapped out the pump",
+          "correct": true
+        },
+        {
+          "field": "outcome",
+          "expected": "/ice/",
+          "actual": "machine made ice on test",
+          "correct": true
+        },
+        {
+          "field": "laborMinutes",
+          "expected": 48,
+          "actual": 48,
+          "correct": true
+        },
+        {
+          "field": "partNumber",
+          "expected": "DEMO-PUMP-01",
+          "actual": "DEMO-PUMP-01",
+          "correct": true
+        }
+      ],
+      "next": {
+        "expected": "signature",
+        "actual": "signature",
+        "correct": true
+      },
+      "turns": [
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2709,
+          "inputTokens": 461,
+          "outputTokens": 83
+        },
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2241,
+          "inputTokens": 543,
+          "outputTokens": 65
+        }
+      ]
+    },
+    {
+      "id": "unknown-serial",
+      "fields": [
+        {
+          "field": "orderId",
+          "expected": null,
+          "actual": null,
+          "correct": true
+        },
+        {
+          "field": "remedy",
+          "expected": "/pump/",
+          "actual": "installed a new pump and ran a cycle",
+          "correct": true
+        },
+        {
+          "field": "outcome",
+          "expected": "/ice|cycle/",
+          "actual": "ice is back",
+          "correct": true
+        },
+        {
+          "field": "laborMinutes",
+          "expected": 50,
+          "actual": 50,
+          "correct": true
+        }
+      ],
+      "next": {
+        "expected": "identify",
+        "actual": "identify",
+        "correct": true
+      },
+      "turns": [
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2600,
+          "inputTokens": 467,
+          "outputTokens": 85
+        }
+      ]
+    },
+    {
+      "id": "wait-time-versus-repair-time",
+      "fields": [
+        {
+          "field": "orderId",
+          "expected": "OWC-DEMO-1042",
+          "actual": "OWC-DEMO-1042",
+          "correct": true
+        },
+        {
+          "field": "outcome",
+          "expected": "/ice/",
+          "actual": "making ice",
+          "correct": true
+        },
+        {
+          "field": "laborMinutes",
+          "expected": 20,
+          "actual": 20,
+          "correct": true
+        },
+        {
+          "field": "partNumber",
+          "expected": "DEMO-PUMP-01",
+          "actual": "DEMO-PUMP-01",
+          "correct": true
+        }
+      ],
+      "next": {
+        "expected": "signature",
+        "actual": "signature",
+        "correct": true
+      },
+      "turns": [
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2554,
+          "inputTokens": 471,
+          "outputTokens": 71
+        }
+      ]
+    },
+    {
+      "id": "refrigerant-exception",
+      "fields": [
+        {
+          "field": "orderId",
+          "expected": "OWC-DEMO-1086",
+          "actual": "OWC-DEMO-1086",
+          "correct": true
+        },
+        {
+          "field": "complaint",
+          "expected": "/leak/",
+          "actual": "refrigerant leak",
+          "correct": true
+        },
+        {
+          "field": "exception",
+          "expected": "/refrigerant|condenser|sealed|R-404A/",
+          "actual": "Coordinator review for refrigerant.",
+          "correct": true
+        },
+        {
+          "field": "outcome",
+          "expected": "/temperature|normal/",
+          "actual": "tested to normal temperature",
+          "correct": true
+        }
+      ],
+      "next": {
+        "expected": "exception",
+        "actual": "exception",
+        "correct": true
+      },
+      "turns": [
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 3596,
+          "inputTokens": 471,
+          "outputTokens": 95
+        }
+      ]
+    },
+    {
+      "id": "uncertain-identity",
+      "fields": [
+        {
+          "field": "orderId",
+          "expected": null,
+          "actual": null,
+          "correct": true
+        },
+        {
+          "field": "part",
+          "expected": "/pump/",
+          "actual": "pump",
+          "correct": true
+        },
+        {
+          "field": "laborMinutes",
+          "expected": 10,
+          "actual": 10,
+          "correct": true
+        }
+      ],
+      "next": {
+        "expected": "identify",
+        "actual": "identify",
+        "correct": true
+      },
+      "turns": [
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 3182,
+          "inputTokens": 462,
+          "outputTokens": 93
+        }
+      ]
+    },
+    {
+      "id": "chat-is-not-attestation",
+      "fields": [
+        {
+          "field": "laborMinutes",
+          "expected": 32,
+          "actual": 32,
+          "correct": true
+        },
+        {
+          "field": "remedy",
+          "expected": "/pump/",
+          "actual": "fitted a water pump",
+          "correct": true
+        },
+        {
+          "field": "noParts",
+          "expected": null,
+          "actual": null,
+          "correct": true
+        },
+        {
+          "field": "attestation",
+          "expected": null,
+          "actual": null,
+          "correct": true
+        },
+        {
+          "field": "outbox",
+          "expected": null,
+          "actual": null,
+          "correct": true
+        }
+      ],
+      "next": {
+        "expected": "signature",
+        "actual": "signature",
+        "correct": true
+      },
+      "turns": [
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2471,
+          "inputTokens": 457,
+          "outputTokens": 79
+        },
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2850,
+          "inputTokens": 528,
+          "outputTokens": 86
+        }
+      ]
+    },
+    {
+      "id": "different-part-and-explicit-quantity",
+      "fields": [
+        {
+          "field": "orderId",
+          "expected": "OWC-DEMO-1086",
+          "actual": "OWC-DEMO-1086",
+          "correct": true
+        },
+        {
+          "field": "complaint",
+          "expected": "/drain|overflow/",
+          "actual": "drain overflowed",
+          "correct": true
+        },
+        {
+          "field": "partNumber",
+          "expected": "DRAIN-120",
+          "actual": "DRAIN-120",
+          "correct": true
+        },
+        {
+          "field": "partQty",
+          "expected": 2,
+          "actual": 2,
+          "correct": true
+        },
+        {
+          "field": "outcome",
+          "expected": "/cycle|leak/",
+          "actual": "cycle completed without leaks",
+          "correct": true
+        },
+        {
+          "field": "laborMinutes",
+          "expected": 65,
+          "actual": 65,
+          "correct": true
+        }
+      ],
+      "next": {
+        "expected": "signature",
+        "actual": "signature",
+        "correct": true
+      },
+      "turns": [
+        {
+          "model": "qwen3:4b",
+          "promptVersion": "1.2.0",
+          "latencyMs": 2652,
+          "inputTokens": 466,
+          "outputTokens": 87
+        }
+      ]
+    }
+  ]
+}
