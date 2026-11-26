@@ -2,7 +2,7 @@
 
 A field-service assistant that catches a missing customer signature while the technician is still on site. It ties the repair to the right machine and verifies the Salesforce handoff after reconnecting.
 
-**[Start the guided demo](https://guhanp09.github.io/offline-warranty-closeout/)** · [Watch the 75-second Salesforce walkthrough](https://guhanp09.github.io/offline-warranty-closeout/walkthrough/)
+**[Start the guided demo](https://guhanp09.github.io/offline-warranty-closeout/)** · [Watch the 75-second Salesforce walkthrough](https://guhanp09.github.io/offline-warranty-closeout/walkthrough/) · [Why I built it (PDF)](docs/why-i-built-this.pdf)
 
 About 2 minutes. No install or sign-in. The demo uses sample data and simulated sync.
 
