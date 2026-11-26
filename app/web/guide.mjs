@@ -230,22 +230,36 @@ export function welcomeUi() {
   </footer>`;
 }
 
+// Targets are the real controls in the app. The tour dims the page, cuts a spotlight around the target
+// and anchors its callout beside it. The callout may repeat the action as a shortcut, but the evidence
+// attestation and the transfer approval are never pressed by the tour.
+const targets = {
+  connection: '#connection [data-action="toggle-connection"]',
+  composer: '#composer-area',
+  units: '#unit-options .unit-options',
+  managerLeft: '#suggestions [data-action="manager-left"]',
+  status: '#visit-header .status',
+  fixture: '#signature-panel [data-action="fixture"]',
+  attest: '#attest',
+  review: '#closeout .review-actions [data-action="review"]',
+  transfer: '#closeout .transfer-controls',
+  approved: '#closeout .check-content > [data-action="review"]',
+  refresh: '#closeout [data-action="refresh"]',
+};
+
 function syncStep(state, config) {
   const { outbox } = state;
-  if (outbox.status === 'synced') return {
-    id: 'done', index: tourSteps.length, stage: 3, complete: true, mood: 'celebrate',
-    target: '#closeout .transfer.verified', spot: 'Verified receipt',
-  };
+  if (outbox.status === 'synced') return { id: 'done', index: tourSteps.length, stage: 3, complete: true, mood: 'celebrate' };
   if (state.offline) return step('online', {
     mood: 'wave',
     recap: 'Approved and locked in the device outbox: the fields, the PDF and its SHA-256.',
     title: 'Back in signal range',
-    text: 'Reconnect to send the approved closeout.',
-    action: 'toggle-connection', label: 'Go online', target: '#closeout .transfer', spot: 'Device outbox',
+    text: 'Click Go online, or press Next, to send the approved closeout.',
+    action: 'toggle-connection', label: 'Go online', target: targets.connection,
   });
   if (outbox.status === 'review') return step('retry', {
     mood: 'worried', tone: 'warn', title: 'The handoff needs review', text: outbox.error.message,
-    action: 'review', label: 'View approved closeout', target: '#closeout .transfer',
+    action: 'review', label: 'View approved closeout', target: targets.approved,
   }, 'handoff-review');
   if (outbox.attempts) {
     const lost = outbox.error?.code === 'ACK_LOST';
@@ -255,99 +269,103 @@ function syncStep(state, config) {
       recap: lost ? 'The destination saved the closeout, but the response never arrived. It stays Pending.'
         : 'The approved closeout is still saved on this device.',
       title: 'Retry without duplicating',
-      text: 'The retry reads the destination first, finds the saved closeout, and checks for one record and the PDF’s SHA-256 before it says Synced.',
-      action: 'guide-sync', label: 'Retry sync', target: '#closeout .transfer', spot: 'Pending, not lost',
+      text: 'Press Next to retry. The app reads the destination first and checks for one record and the PDF’s SHA-256 before it says Synced.',
+      action: 'guide-sync', label: 'Retry sync', target: targets.transfer,
     });
   }
   const recap = 'Online. One approved closeout is waiting to send.';
   return step('drop', config.failpoint ? {
     mood: 'focused', recap, title: 'Test a lost response',
-    text: 'The destination saves the record and PDF, then the response drops: the classic way to create a duplicate claim.',
-    action: 'guide-drop-response', label: 'Simulate lost response', target: '#closeout .transfer',
+    text: 'Press Next to send it with a simulated drop: the destination saves the record and PDF, then the response is lost.',
+    action: 'guide-drop-response', label: 'Simulate lost response', target: targets.transfer,
   } : {
     mood: 'focused', recap, title: 'Send the approved closeout',
-    text: 'Verify the record and signed PDF at the demo destination.',
-    action: 'guide-sync', label: 'Simulate sync', target: '#closeout .transfer',
+    text: 'Press Next to send the record and signed PDF to the demo destination.',
+    action: 'guide-sync', label: 'Simulate sync', target: targets.transfer,
   });
 }
 
 export function guideStep(state, config, { reloaded = false } = {}) {
   if (state.outbox) return syncStep(state, config);
   if (state.messages.length < 2) return state.offline ? step('note', {
-    recap: 'You’re offline. The closeout now runs entirely from this device.',
+    recap: 'You’re offline. Everything now runs from this device.',
     title: 'Describe the repair',
-    text: 'Send the technician’s note in their own words, or type your own under Service notes.',
-    action: 'guide-note', label: 'Send example note', target: '#composer',
+    text: 'Type your own note and press Send, or press Next to send the example. The assistant turns it into typed fields.',
+    action: 'guide-note', label: 'Send example note', target: targets.composer,
   }) : step('offline', {
     mood: 'calm',
     recap: 'Both work orders and the Hoshizaki warranty procedure are saved on this device.',
     title: 'Take the visit offline',
-    text: 'Basement kitchens often have no signal. Go offline and the closeout keeps working.',
-    action: 'toggle-connection', label: 'Work offline', target: '#cache-state .cache-tag',
+    text: 'Kitchens and basements often have no signal. Click Work offline, or press Next, and the closeout keeps working.',
+    action: 'toggle-connection', label: 'Work offline', target: targets.connection,
   });
 
   const [policy, orderCheck, signature] = state.checks;
   if (!policy.ok) return step('signature', {
     mood: 'worried', tone: 'warn', title: 'Refresh the warranty procedure', text: policy.detail,
     action: state.offline ? 'toggle-connection' : 'refresh', label: state.offline ? 'Go online' : 'Refresh source',
+    target: state.offline ? targets.connection : targets.refresh,
   }, 'source');
-  if (!orderCheck.ok) return step('unit', {
-    mood: 'curious',
-    recap: capturedFields(state.draft.fields),
-    title: 'Which unit did you repair?',
-    text: `Both machines are ${state.visit.orders[0].model}, so the assistant asks for the serial instead of guessing.`,
-    chooseUnit: true, target: '#thread .message.assistant .message-body', spot: 'Asks instead of guessing',
-  });
+  if (!orderCheck.ok) {
+    const [first] = state.visit.orders;
+    return step('unit', {
+      mood: 'curious',
+      recap: capturedFields(state.draft.fields),
+      title: 'Pick the unit you repaired',
+      text: `Both machines are ${first.model}, so the assistant asks instead of guessing. Click the serial you repaired, or press Next for the ${first.location.toLowerCase()} unit.`,
+      chooseUnit: true, action: 'order', order: first.id, label: `Choose ${first.serial}`, target: targets.units,
+    });
+  }
 
   const { file, fields, origins } = state.draft;
   const order = selectedOrder(state);
-  const reviewTarget = '#closeout .review-actions [data-action="review"]';
   if (signature.ok) {
     const missing = state.checks.find((check) => !check.ok);
     return missing ? step('review', {
-      mood: 'curious', tone: 'warn', title: 'Finish the repair details', text: missing.detail,
-      action: 'review', label: 'Open closeout preview', target: reviewTarget,
+      mood: 'curious', tone: 'warn', title: 'Finish the repair details', text: missing.detail + ' Press Next to open the preview.',
+      action: 'review', label: 'Open closeout preview', target: targets.review,
     }, 'details') : step('review', {
       mood: 'proud',
       recap: `Checklist complete: ${state.checks.length} of ${state.checks.length}.`,
-      title: 'Review and approve the transfer',
-      text: 'Check the summary, then approve. Nothing is sent until you do.',
-      action: 'review', label: 'Open closeout preview', target: reviewTarget,
+      title: 'Review and approve',
+      text: 'Press Next to open the closeout preview. Nothing is sent until you approve it there.',
+      action: 'review', label: 'Open closeout preview', target: targets.review,
     });
   }
   if (file?.orderId === order.id && file.serial === order.serial) return step('attest', {
     mood: 'focused',
     recap: `The signed PDF is bound to ${order.ticket} and ${order.serial}.`,
     title: 'Confirm the signed document',
-    text: 'Open the PDF to compare its serial, then tick both statements. A person attests the evidence, not the model.',
-    action: 'guide-attest', label: 'Go to the checks', target: '#attest', spot: 'Two explicit checks',
+    text: 'Tick both statements yourself, then press Next. A person attests the evidence: not the model, and not this tour.',
+    action: 'guide-attest', label: 'Confirm evidence',
+    secondary: [{ action: 'view-evidence', label: 'Open the PDF' }], target: targets.attest,
   });
   if (file) return step('attach', {
     mood: 'alarmed', tone: 'warn', recap: 'That PDF belongs to the other machine, so it can’t count.',
     title: 'Use evidence for the selected unit',
-    text: `Attach the signed work order for ${order.ticket}.`,
-    action: 'fixture', label: 'Attach sample PDF', target: '#signature-panel', spot: 'Wrong work order',
+    text: `Press Next to attach the signed work order for ${order.ticket} instead.`,
+    action: 'fixture', label: 'Attach sample PDF', target: targets.fixture,
   }, 'mismatch');
   if (fields.signatureUnavailable) return reloaded ? step('attach', {
     recap: 'Restored from this device: the serial, the draft, the cited rule and this step.',
-    title: 'The signed work order arrives',
-    text: `The manager signs later. Attach their signed PDF for ${order.ticket}. A file for the other machine wouldn’t count.`,
-    action: 'fixture', label: 'Attach sample PDF', target: '#signature-panel', spot: 'Signed work order',
+    title: 'Attach the signed work order',
+    text: `The manager signs later. Click Use example PDF, or press Next, to attach their signed copy for ${order.ticket}.`,
+    action: 'fixture', label: 'Attach sample PDF', target: targets.fixture,
   }) : step('reload', {
     mood: 'focused',
     recap: 'Saved as Awaiting signature. Approval stays locked.',
     title: 'Reload to prove it’s saved',
-    text: 'The draft lives on this device, not in the page. Reload, or switch off Wi-Fi first, and it all comes back.',
+    text: 'The draft lives on this device, not in the page. Press Next to reload (switch off Wi-Fi first if you like) and this status survives.',
     action: 'guide-reload', label: 'Reload page', secondary: [{ action: 'guide-skip-reload', label: 'Skip' }],
-    target: '#visit-header .status',
+    target: targets.status,
   });
   return step('signature', {
     mood: 'worried',
     recap: `Matched ${order.ticket} to ${order.serial}.` + (origins.partNumber === 'cached job' ? ' The part number came from the cached job.' : ''),
     title: 'The claim needs a customer signature',
-    text: 'Hoshizaki won’t approve a claim without one (page 3, item F). What if the manager already left?',
+    text: 'Hoshizaki won’t approve a claim without one (page 3, item F). The manager already left: click the reply, or press Next.',
     action: 'manager-left', label: 'Manager has left', secondary: [{ action: 'source', label: 'Read the requirement' }],
-    target: '#signature-panel', spot: 'Hoshizaki · p. 3, item F',
+    target: targets.managerLeft,
   });
 }
 
@@ -356,23 +374,17 @@ export function reviewHint(step) {
   return `Step ${step.index + 1} of ${tourSteps.length}: tick the approval box, then approve. Nothing is sent until you do.`;
 }
 
-function trackUi(step) {
+function ticksUi(step) {
   const groups = stages.map((stage, stageIndex) => {
     const ticks = tourSteps.map(([, owner], index) => owner !== stageIndex ? ''
-      : `<i class="${index < step.index ? 'is-done' : index === step.index ? 'is-current' : ''}"></i>`).join('');
+      : `<i class="${step.complete || index < step.index ? 'is-done' : index === step.index ? 'is-current' : ''}"></i>`).join('');
     const done = step.complete || stageIndex < step.stage;
     const current = !step.complete && stageIndex === step.stage;
     return `<li class="${done ? 'is-done' : current ? 'is-current' : ''}"${current ? ' aria-current="step"' : ''}>
       <span class="tour-ticks" aria-hidden="true">${ticks}</span>
-      <span class="tour-stage">${stage.label}${done ? '<span class="sr-only"> complete</span>' : ''}</span></li>`;
+      <span class="sr-only">${stage.label}${done ? ' complete' : ''}</span></li>`;
   }).join('');
-  const position = step.complete ? 'Demo complete'
-    : `Step ${step.index + 1} of ${tourSteps.length}<span class="tour-count-stage"> · ${stages[step.stage].label}</span>`;
-  return `<div class="tour-top">
-    <ol class="tour-track" aria-label="Demo progress">${groups}</ol>
-    <p class="tour-count">${position}</p>
-    <button type="button" class="tour-restart" data-action="reset">Restart</button>
-  </div>`;
+  return `<ol class="tour-track" aria-label="Demo progress">${groups}</ol>`;
 }
 
 function finaleUi(step, state) {
@@ -384,11 +396,13 @@ function finaleUi(step, state) {
     ['Kept on the device', 'The draft, cited rule and PDF were stored locally while offline.'],
     ['Exactly once', `${count(receipt.closeoutCount, 'record')} and ${count(receipt.fileCount, 'matching file')} after ${count(attempts, 'attempt')}.`],
   ];
-  return `${trackUi(step)}
-    <div class="tour-final">
+  return `<div class="tour-final">
       <span class="tour-chip">${chipSvg({ mood: 'celebrate', size: 120 })}</span>
-      <p class="tour-recap">${icon('check', 15)}<span>Simulation verified. The receipt matches the approved closeout.</span></p>
-      <h2 id="guide-heading" tabindex="-1">Claim closed: offline, <em>and exactly once.</em></h2>
+      <div class="tour-final-head">
+        ${ticksUi(step)}
+        <p class="tour-recap">${icon('check', 15)}<span>Simulation verified. The receipt matches the approved closeout.</span></p>
+        <h2 id="guide-heading" tabindex="-1">Claim closed: offline, <em>and exactly once.</em></h2>
+      </div>
       <ul class="tour-proof">
         ${proofs.map(([title, text]) => `<li><strong>${icon('check', 15)}${title}</strong><p>${esc(text)}</p></li>`).join('')}
       </ul>
@@ -405,28 +419,36 @@ function finaleUi(step, state) {
           <div><dt>Median turn</dt><dd>2.62 s</dd></div>
         </dl>
       </div>
+    </div>
+    <div class="tour-final-foot">
+      <button type="button" class="tour-link" data-action="reset">Restart the demo</button>
+      <button type="button" class="button button-primary coach-next" data-action="finish-tour">Finish tour ${icon('arrow', 16)}</button>
     </div>`;
 }
 
-export function guideUi(step, { busy, orderOptions, state }) {
+export function guideUi(step, { busy, state }) {
   if (step.complete) return finaleUi(step, state);
   const disabled = busy ? ' disabled' : '';
   const secondary = (step.secondary ?? []).map(({ action, label }) =>
-    `<button type="button" class="button button-quiet" data-action="${action}"${action === 'source' ? '' : disabled}>${esc(label)}</button>`).join('');
-  const actions = step.chooseUnit ? orderOptions
-    : `<button type="button" class="button button-primary" data-action="${step.action}"${disabled}>${esc(step.label)} ${icon('arrow', 16)}</button>${secondary}`;
+    `<button type="button" class="button button-quiet" data-action="${action}"${['source', 'view-evidence'].includes(action) ? '' : disabled}>${esc(label)}</button>`).join('');
+  const next = step.action
+    ? `<button type="button" class="button button-primary coach-next" data-action="${step.action}"${step.order ? ` data-order="${esc(step.order)}"` : ''} aria-label="Next: ${esc(step.label)}"${disabled}>Next ${icon('arrow', 16)}</button>` : '';
   const recap = step.recap ? `<p class="tour-recap" id="guide-recap">${icon(step.tone === 'warn' ? 'alert' : 'check', 15)}<span>${esc(step.recap)}</span></p>` : '';
   // Chip sits outside the scrolling part, so on phones it can perch on the sheet's top edge.
-  return `<span class="tour-chip">${chipSvg({ mood: step.mood, size: 88 })}</span>
-    <div class="tour-scroll">
-      ${trackUi(step)}
-      <div class="tour-body">
-        <div class="tour-copy">
-          ${recap}
-          <h2 id="guide-heading" tabindex="-1" aria-describedby="${step.recap ? 'guide-recap ' : ''}guide-text">${esc(step.title)}</h2>
-          <p class="tour-text" id="guide-text">${esc(step.text)}</p>
-        </div>
-        <div class="tour-actions${step.chooseUnit ? ' tour-choose' : ''}">${actions}</div>
+  return `<span class="coach-arrow" aria-hidden="true"></span>
+    <span class="tour-chip">${chipSvg({ mood: step.mood, size: 88 })}</span>
+    <div class="coach-head">
+      <div class="coach-meta">
+        <p class="tour-count">Step ${step.index + 1} of ${tourSteps.length} <span>·</span> ${stages[step.stage].label}</p>
+        ${ticksUi(step)}
       </div>
+      <button type="button" class="coach-close" data-action="toggle-guide" aria-label="Skip the tour">${icon('close', 18)}</button>
+    </div>
+    <div class="tour-scroll">
+      ${recap}
+      <h2 id="guide-heading" tabindex="-1" aria-describedby="${step.recap ? 'guide-recap ' : ''}guide-text">${esc(step.title)}</h2>
+      <p class="tour-text" id="guide-text">${esc(step.text)}</p>
+      ${next || secondary ? `<div class="tour-actions">${secondary}${next}</div>` : ''}
+      <p class="coach-foot"><button type="button" class="tour-link" data-action="reset">Restart</button><span aria-hidden="true">·</span><span>Press → for next · Esc to skip</span></p>
     </div>`;
 }

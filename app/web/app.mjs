@@ -90,8 +90,28 @@ function arrangePanels() {
   if (layout.firstElementChild !== first) layout.prepend(first);
 }
 
-// The sticky tour card (desktop) and the bottom sheet (phones) cover part of the page. Their size
-// becomes scroll padding, so a highlighted element is never scrolled underneath them.
+// Coach marks. The page is dimmed except for a cutout around the real control the step is about;
+// clicks pass through the cutout, while clicks on the dimmed page only nudge the callout. On desktop
+// the callout is anchored beside the target with an arrow; on phones it is a bottom sheet.
+const coach = $('coach');
+const hole = coach.querySelector('.coach-hole');
+const blocks = [...coach.querySelectorAll('.coach-block')];
+const holePad = 8;
+let coachFrame = 0;
+let stableFrames = 0;
+let lastLayout = '';
+let coachShown = false;
+let moveTimer;
+
+const sheetMode = () => narrowLayout.matches;
+
+function tourTarget() {
+  if (!step?.target || step.complete) return null;
+  const matches = document.querySelectorAll(step.target);
+  const target = matches[matches.length - 1];
+  return target?.getClientRects().length ? target : null;
+}
+
 // On phones Chip perches above the sheet's top edge, so its overhang counts as covered too.
 function chipOverhang() {
   const chip = guide.querySelector('.tour-chip');
@@ -99,54 +119,177 @@ function chipOverhang() {
 }
 
 function measureGuide() {
-  const shown = !guide.hidden && !$('visit').hidden;
-  const position = shown ? getComputedStyle(guide).position : '';
-  root.style.setProperty('--tour-top', position === 'sticky' ? guide.offsetHeight + 24 + 'px' : '0px');
-  root.style.setProperty('--tour-bottom', position === 'fixed' ? Math.ceil(guide.offsetHeight + chipOverhang() + 20) + 'px' : '0px');
+  const sheet = !guide.hidden && !$('visit').hidden && sheetMode() && !step?.complete;
+  root.style.setProperty('--tour-top', '0px');
+  root.style.setProperty('--tour-bottom', sheet ? Math.ceil(guide.offsetHeight + chipOverhang() + 20) + 'px' : '0px');
 }
 
-// The part of the window the tour leaves clear: above the bottom sheet on phones, or below the
-// desktop card once it has stuck to the top of the window.
+// The part of the window a highlighted control must stay inside: above the sheet on phones.
 function clearBand() {
-  if (guide.hidden || $('visit').hidden) return { top: 0, bottom: innerHeight };
-  const box = guide.getBoundingClientRect();
-  const styles = getComputedStyle(guide);
-  if (styles.position === 'fixed') return { top: 0, bottom: box.top - chipOverhang() };
-  if (styles.position === 'sticky' && box.top <= parseFloat(styles.top) + 1) return { top: box.bottom, bottom: innerHeight };
-  return { top: 0, bottom: innerHeight };
+  if (guide.hidden || $('visit').hidden || !sheetMode() || step?.complete) return { top: 0, bottom: innerHeight };
+  return { top: 0, bottom: guide.getBoundingClientRect().top - chipOverhang() };
 }
 
 function reveal(element) {
   if (!element?.isConnected || dialog.open) return;
   const box = element.getBoundingClientRect();
-  const band = element === guide ? { top: 0, bottom: innerHeight } : clearBand();
-  if (box.top >= band.top + 8 && box.bottom <= band.bottom - 8) return;
+  const band = clearBand();
+  // On desktop the callout also needs room above or below the control.
+  const room = sheetMode() ? 12 : Math.min(150, (band.bottom - band.top - box.height) / 2);
+  if (box.top >= band.top + room && box.bottom <= band.bottom - room) return;
   element.scrollIntoView({
-    block: element === guide || box.height > band.bottom - band.top - 16 ? 'start' : 'center',
+    block: box.height > band.bottom - band.top - 16 ? 'start' : 'center',
     behavior: reducedMotion.matches ? 'auto' : 'smooth',
   });
 }
 
-function spotlight() {
-  for (const element of $('visit').querySelectorAll('.tour-spot')) {
-    element.classList.remove('tour-spot', 'tour-spot-enter');
-    delete element.dataset.spot;
+function setBox(element, x, y, width, height) {
+  element.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+  element.style.width = Math.max(0, Math.round(width)) + 'px';
+  element.style.height = Math.max(0, Math.round(height)) + 'px';
+}
+
+function placeCallout(box, width, height) {
+  const anchored = !sheetMode() && !step.complete;
+  guide.classList.toggle('is-anchored', anchored);
+  if (!anchored) {
+    guide.style.transform = '';
+    delete guide.dataset.side;
+    return '';
   }
+  const w = guide.offsetWidth;
+  const h = guide.offsetHeight;
+  const gap = 18;
+  const margin = 14;
+  const clampX = (x) => Math.min(Math.max(x, margin), width - w - margin);
+  const clampY = (y) => Math.min(Math.max(y, margin), height - h - margin);
+  if (!box) {
+    guide.dataset.side = 'none';
+    guide.style.transform = `translate(${Math.round(clampX((width - w) / 2))}px, ${Math.round(clampY((height - h) / 2))}px)`;
+    return guide.style.transform;
+  }
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+  const options = [
+    { side: 'bottom', x: clampX(cx - w / 2), y: box.y + box.h + gap, room: height - (box.y + box.h) - gap - margin - h },
+    { side: 'top', x: clampX(cx - w / 2), y: box.y - gap - h, room: box.y - gap - margin - h },
+    { side: 'right', x: box.x + box.w + gap, y: clampY(cy - h / 2), room: width - (box.x + box.w) - gap - margin - w },
+    { side: 'left', x: box.x - gap - w, y: clampY(cy - h / 2), room: box.x - gap - margin - w },
+  ];
+  const choice = options.find((option) => option.room >= 0) ?? options.reduce((a, b) => (b.room > a.room ? b : a));
+  const x = clampX(choice.x);
+  const y = clampY(choice.y);
+  const along = choice.side === 'bottom' || choice.side === 'top' ? cx - x : cy - y;
+  const span = choice.side === 'bottom' || choice.side === 'top' ? w : h;
+  const visible = box.y + box.h > 0 && box.y < height && box.x + box.w > 0 && box.x < width;
+  guide.dataset.side = visible ? choice.side : 'none';
+  guide.style.setProperty('--arrow', Math.round(Math.min(Math.max(along, 28), span - 28)) + 'px');
+  guide.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+  return guide.style.transform + guide.dataset.side;
+}
+
+function layoutCoach() {
+  const active = Boolean(step) && !$('visit').hidden && !guide.hidden && !dialog.open;
+  if (coach.hidden === active) coach.hidden = !active;
+  if (!active) {
+    coachShown = false;
+    return 'off';
+  }
+  if (!coachShown) {
+    // First appearance: place everything without gliding in from a corner.
+    coach.classList.remove('is-moving');
+    guide.classList.remove('is-moving');
+    coachShown = true;
+  }
+  const width = document.documentElement.clientWidth;
+  const height = innerHeight;
+  const target = tourTarget();
+  const rect = target?.getBoundingClientRect();
+  const box = rect ? { x: rect.left - holePad, y: rect.top - holePad, w: rect.width + holePad * 2, h: rect.height + holePad * 2 } : null;
+  coach.classList.toggle('is-full', !box);
+  if (box) {
+    const right = box.x + box.w;
+    const bottom = box.y + box.h;
+    setBox(hole, box.x, box.y, box.w, box.h);
+    setBox(blocks[0], 0, 0, width, box.y);
+    setBox(blocks[1], 0, bottom, width, height - bottom);
+    setBox(blocks[2], 0, box.y, box.x, box.h);
+    setBox(blocks[3], right, box.y, width - right, box.h);
+  } else {
+    setBox(hole, width / 2, height / 2, 0, 0);
+    setBox(blocks[0], 0, 0, width, height);
+    for (const block of blocks.slice(1)) setBox(block, 0, 0, 0, 0);
+  }
+  const callout = placeCallout(box, width, height);
+  return (box ? [box.x, box.y, box.w, box.h].map(Math.round).join(',') : 'full') + callout;
+}
+
+function tickCoach() {
+  coachFrame = 0;
+  const layout = layoutCoach();
+  stableFrames = layout === lastLayout ? stableFrames + 1 : 0;
+  lastLayout = layout;
+  if (layout !== 'off' && stableFrames < 45) coachFrame = requestAnimationFrame(tickCoach);
+}
+
+function kickCoach() {
+  stableFrames = 0;
+  if (!coachFrame) coachFrame = requestAnimationFrame(tickCoach);
+}
+
+window.addEventListener('scroll', kickCoach, { passive: true });
+dialog.addEventListener('close', kickCoach);
+coach.addEventListener('click', () => {
+  guide.classList.remove('is-nudged');
+  void guide.offsetWidth;
+  guide.classList.add('is-nudged');
+});
+
+// A short warning inside the callout, for a Next that the reader has to complete first.
+function coachAlert(text) {
+  const holder = guide.querySelector('.tour-scroll');
+  if (!holder) return;
+  let line = guide.querySelector('.coach-alert');
+  if (!line) {
+    line = document.createElement('p');
+    line.className = 'coach-alert';
+    line.setAttribute('role', 'alert');
+    holder.querySelector('.tour-actions')?.before(line);
+  }
+  line.textContent = text;
+  guide.classList.remove('is-nudged');
+  void guide.offsetWidth;
+  guide.classList.add('is-nudged');
+  hole.classList.remove('is-pulsing');
+  void hole.offsetWidth;
+  hole.classList.add('is-pulsing');
+  kickCoach();
+}
+
+function spotlight() {
   const id = step?.id ?? null;
   const entering = id !== spotId;
   spotId = id;
-  if (!step) return;
-  const matches = step.target ? $('visit').querySelectorAll(step.target) : [];
-  const target = matches[matches.length - 1];
-  if (target) {
-    target.classList.add('tour-spot');
-    if (step.spot) target.dataset.spot = step.spot;
+  if (step && entering) {
+    if (coachShown) {
+      coach.classList.add('is-moving');
+      guide.classList.add('is-moving');
+      clearTimeout(moveTimer);
+      moveTimer = setTimeout(() => {
+        coach.classList.remove('is-moving');
+        guide.classList.remove('is-moving');
+      }, 650);
+    }
+    hole.classList.remove('is-pulsing');
+    void hole.offsetWidth;
+    hole.classList.add('is-pulsing');
+    guide.querySelector('.tour-scroll, .tour-final')?.classList.add('is-entering');
+    guide.querySelector('.tour-chip')?.classList.add('is-entering');
+    requestAnimationFrame(() => reveal(tourTarget()));
   }
-  if (!entering) return;
-  target?.classList.add('tour-spot-enter');
-  guide.querySelector('.tour-body, .tour-final')?.classList.add('is-entering');
-  guide.querySelector('.tour-chip')?.classList.add('is-entering');
-  requestAnimationFrame(() => reveal(step?.complete ? guide : target));
+  // Place the coach now, so the callout is visible (and focusable) before anything moves focus to it.
+  layoutCoach();
+  kickCoach();
 }
 
 // The welcome page is built once and kept while it is shown, so its entrance and scroll motion
@@ -176,12 +319,13 @@ function render() {
   layout.toggleAttribute('data-checklist-first', Boolean(step && step.stage >= 2));
   arrangePanels();
   guide.hidden = !step;
-  const html = step ? guideUi(step, { busy, orderOptions: orders, state }) : '';
+  const html = step ? guideUi(step, { busy, state }) : '';
   if (html !== guideHtml) {
     guide.innerHTML = html;
     guideHtml = html;
   }
   guide.dataset.step = step?.id ?? '';
+  guide.dataset.target = step?.target ?? '';
   guide.classList.toggle('is-complete', Boolean(step?.complete));
   guide.classList.toggle('is-warn', step?.tone === 'warn');
   $('connection').innerHTML = showWelcome
@@ -189,11 +333,11 @@ function render() {
       <a class="nav-link" href="${repositoryUrl}" target="_blank" rel="noreferrer">GitHub</a>
       <button type="button" class="button button-header" data-action="start-guided"${busy ? ' disabled' : ''}>Start demo</button>`
     : (preview ? `<button type="button" class="button button-header" data-action="toggle-guide" aria-controls="guide" aria-expanded="${Boolean(step)}">${step ? 'Hide guide' : 'Show guide'}</button>` : '')
-      + connectionUi(state, !step);
+      + connectionUi(state);
   $('visit-header').innerHTML = headerUi(state, config);
   $('thread').innerHTML = threadUi(state, busy);
-  $('unit-options').innerHTML = step?.chooseUnit ? '' : orders;
-  $('closeout').innerHTML = checklistUi(state, config, busy, step?.action);
+  $('unit-options').innerHTML = orders;
+  $('closeout').innerHTML = checklistUi(state, config, busy);
   $('runtime-label').textContent = config.mode === 'preview' ? 'Browser demo · Sample parser'
     : config.model ? config.model + ' · On-device model' : 'Local app · Sample parser';
   $('cache-state').innerHTML = state.visit
@@ -210,7 +354,7 @@ function render() {
   note.disabled = reading;
   const suggestions = [];
   if (state.visit && state.messages.length < 2) suggestions.push('<button type="button" class="suggestion" data-action="sample-note">Use example note</button>');
-  if (state.draft.orderId && !state.draft.attestation && !state.draft.file && !state.draft.fields.signatureUnavailable && step?.action !== 'manager-left') {
+  if (state.draft.orderId && !state.draft.attestation && !state.draft.file && !state.draft.fields.signatureUnavailable) {
     suggestions.push('<button type="button" class="suggestion" data-action="manager-left">The manager already left</button>');
   }
   $('suggestions').innerHTML = suggestions.join('');
@@ -224,9 +368,13 @@ function render() {
 narrowLayout.addEventListener('change', () => {
   arrangePanels();
   measureGuide();
+  kickCoach();
 });
-window.addEventListener('resize', measureGuide);
-if ('ResizeObserver' in window) new ResizeObserver(measureGuide).observe(guide);
+window.addEventListener('resize', () => {
+  measureGuide();
+  kickCoach();
+});
+if ('ResizeObserver' in window) new ResizeObserver(() => { measureGuide(); kickCoach(); }).observe(guide);
 
 function setGuide(enabled) {
   guideEnabled = enabled;
@@ -252,6 +400,8 @@ function fillDialog(kind) {
   };
   $('dialog-inner').innerHTML = content[kind]();
   if (!dialog.open) dialog.showModal();
+  layoutCoach();
+  kickCoach();
   if (kind === 'review') validatePreview();
 }
 
@@ -347,10 +497,12 @@ document.addEventListener('click', async (event) => {
       }
       break;
     case 'toggle-guide':
-      setGuide(!guideEnabled);
+    case 'finish-tour':
+      setGuide(action === 'toggle-guide' && !guideEnabled);
       render();
       if (guideEnabled) focusGuide();
-      else $('connection').querySelector('[data-action="toggle-guide"]')?.focus();
+      else $('connection').querySelector('[data-action="toggle-guide"]')?.focus({ preventScroll: true });
+      if (action === 'finish-tour') reveal($('closeout').querySelector('.transfer') ?? $('closeout'));
       break;
     case 'prepare':
       await dispatch('prepare');
@@ -361,12 +513,6 @@ document.addEventListener('click', async (event) => {
     case 'guide-note':
       advanced = await send(starterNote, false);
       break;
-    case 'guide-attest': {
-      const form = $('attest');
-      reveal(form);
-      form?.querySelector('input:not(:checked)')?.focus({ preventScroll: true });
-      break;
-    }
     case 'guide-reload':
       writeSession(reloadPreference, String(state.rev));
       window.location.reload();
@@ -384,6 +530,18 @@ document.addEventListener('click', async (event) => {
         video.play().catch(() => {});
         video.focus();
       }
+      break;
+    }
+    case 'guide-attest': {
+      // Next never ticks the statements. Once the reader has ticked both, it confirms them.
+      const form = $('attest');
+      if (!form) break;
+      if (form.checkValidity()) {
+        form.requestSubmit();
+        break;
+      }
+      form.querySelector('input:not(:checked)')?.focus({ preventScroll: true });
+      coachAlert('Tick both statements first. The tour can’t attest for you.');
       break;
     }
     case 'sample-note':
@@ -445,6 +603,24 @@ document.addEventListener('click', async (event) => {
       break;
   }
   if (inGuide && advanced) focusGuide();
+});
+
+// Esc skips the tour (a dialog closes itself first). "Show guide" brings it back at the same step.
+// → presses Next, outside text fields.
+document.addEventListener('keydown', (event) => {
+  if (dialog.open || !step || !preview || event.defaultPrevented) return;
+  if (event.key === 'Escape') {
+    setGuide(false);
+    render();
+    $('connection').querySelector('[data-action="toggle-guide"]')?.focus({ preventScroll: true });
+  } else if (event.key === 'ArrowRight' && !event.altKey && !event.metaKey && !event.ctrlKey
+    && !event.target.closest?.('input, textarea, select, [contenteditable="true"]')) {
+    const next = guide.querySelector('.coach-next:not(:disabled)');
+    if (next) {
+      event.preventDefault();
+      next.click();
+    }
+  }
 });
 
 document.addEventListener('input', (event) => {

@@ -39,7 +39,7 @@ export const signerNote = 'The manager already left.';
 
 export function connectionUi(state, showToggle = true) {
   const status = state.offline ? 'Offline' : 'Online';
-  return `<span class="connection-chip ${state.offline ? 'is-offline' : ''}">${icon(state.offline ? 'offline' : 'wifi', 17)}${status}</span>
+  return `<span class="connection-chip ${state.offline ? 'is-offline' : ''}">${icon(state.offline ? 'offline' : 'wifi', 17)}<span>${status}</span></span>
     ${state.visit && showToggle ? button('toggle-connection', state.offline ? 'Go online' : 'Work offline', 'button-header') : ''}`;
 }
 
@@ -84,7 +84,7 @@ export function orderUi(state, show) {
   </div>`;
 }
 
-export function checklistUi(state, config, busy, guideAction) {
+export function checklistUi(state, config, busy) {
   const order = selectedOrder(state);
   const file = state.draft.file;
   const checks = state.checks;
@@ -103,7 +103,7 @@ export function checklistUi(state, config, busy, guideAction) {
       <li>${icon('clipboard', 17)} Repair, parts and labor</li>
     </ul>
   </div>`;
-  if (state.outbox) return header + transferUi(state, config, busy, Boolean(guideAction));
+  if (state.outbox) return header + transferUi(state, config, busy);
 
   const source = retrieveProcedure(state, 'signature');
   const signaturePanel = `<div class="signature ${signature.ok ? 'signature-ok' : ''}" id="signature-panel">
@@ -121,7 +121,7 @@ export function checklistUi(state, config, busy, guideAction) {
       <button type="submit" class="button button-primary">Confirm evidence</button>
       </form>` : ''}
     ${order && !state.draft.orderNeedsConfirmation && (!correctFile || signature.ok) ? `<div class="signature-actions">
-      ${!signature.ok && guideAction !== 'fixture' ? button('fixture', 'Use example PDF', 'button-primary', 'doc') : ''}
+      ${!signature.ok ? button('fixture', 'Use example PDF', 'button-primary', 'doc') : ''}
       ${button('upload', signature.ok ? 'Replace file' : 'Attach a file', 'button-quiet', 'upload')}
     </div>` : ''}
   </div>`;
@@ -142,7 +142,7 @@ export function checklistUi(state, config, busy, guideAction) {
   </div>`;
 }
 
-function transferUi(state, config, busy, guided) {
+function transferUi(state, config, busy) {
   const { status, attempts, receipt, error } = state.outbox;
   const real = config.remote === 'salesforce';
   if (status === 'synced') return `<div class="check-content">
@@ -167,8 +167,10 @@ function transferUi(state, config, busy, guided) {
       <span class="signature-icon">${icon(status === 'review' ? 'alert' : 'clock', 22)}</span>
       <h3>Saved on device · ${stateLabel}</h3>
       <p>${error ? esc(error.message) : state.offline ? 'Reconnect when you’re ready to send the approved closeout.' : 'Send the approved work order, repair details and signed PDF.'}</p>
-      ${!guided && config.failpoint && !attempts && !state.offline ? '<label class="failpoint"><input type="checkbox" id="drop-ack"> Test a lost sync response</label>' : ''}
-      ${controls && (!guided || refreshable) ? '<div class="signature-actions">' + controls + '</div>' : ''}
+      ${(config.failpoint && !attempts && !state.offline) || controls ? `<div class="transfer-controls">
+        ${config.failpoint && !attempts && !state.offline ? '<label class="failpoint"><input type="checkbox" id="drop-ack"> Test a lost sync response</label>' : ''}
+        ${controls ? '<div class="signature-actions">' + controls + '</div>' : ''}
+      </div>` : ''}
     </div>
     ${button('review', 'View approved closeout', 'button-quiet', 'doc')}
   </div>`;

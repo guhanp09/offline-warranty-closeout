@@ -6,7 +6,7 @@ A field-service assistant that catches a missing customer signature while the te
 
 About 2 minutes. No install or sign-in. The demo uses sample data and simulated sync.
 
-[![Offline in the guided demo: Chip, the guide, flags the missing customer signature and cites Hoshizaki page 3, item F beside the repair notes](docs/awaiting-signature.webp)](https://guhanp09.github.io/offline-warranty-closeout/)
+[![The guided tour spotlights the reply to the missing customer signature while Chip, the guide, cites Hoshizaki page 3, item F](docs/awaiting-signature.webp)](https://guhanp09.github.io/offline-warranty-closeout/)
 
 In the demo, you’ll identify one of two same-model machines, reload an offline draft that’s awaiting a signature, and recover from a lost sync response.
 

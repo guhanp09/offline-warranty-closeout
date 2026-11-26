@@ -20,8 +20,10 @@ const tourActions = {
   fixture: () => ({ type: 'fixture' }),
   'guide-drop-response': () => ({ type: 'sync', dropAck: true }),
   'guide-sync': () => ({ type: 'sync' }),
+  order: (state, step) => ({ type: 'order', orderId: step.order }),
 };
-const pointers = new Set(['guide-reload', 'guide-attest', 'review', 'source', 'guide-skip-reload']);
+// Next on the evidence step only submits statements the reader ticked; it never ticks them.
+const pointers = new Set(['guide-reload', 'review', 'source', 'guide-skip-reload', 'view-evidence', 'guide-attest']);
 
 function demo() {
   const receipts = new Map();
@@ -48,6 +50,8 @@ for (const serial of ['DEMO-KM-17042', 'DEMO-KM-17086']) {
     while (!step.complete) {
       seen.push(step.id);
       assert.equal(step.index, seen.length - 1, step.id + ' is out of order');
+      assert.match(step.target ?? '', /^#/, step.id + ' spotlights a real control');
+      assert.ok(step.action && step.label, step.id + ' has a Next button');
       for (const action of [step.action, ...(step.secondary ?? []).map((item) => item.action)].filter(Boolean)) {
         assert.ok(action in tourActions || pointers.has(action), 'the tour offers an unknown action: ' + action);
       }
@@ -103,4 +107,20 @@ test('skipping the reload is an explicit choice, not the default', async () => {
   const step = await demoRun.run({ type: 'turn', text: signerNote });
   assert.equal(step.id, 'reload');
   assert.deepEqual(step.secondary.map((item) => item.action), ['guide-skip-reload']);
+});
+
+test('Next on the unit step picks the first unit, and Next on the evidence step waits for the reader', async () => {
+  const demoRun = demo();
+  await demoRun.run({ type: 'prepare' });
+  await demoRun.run({ type: 'connection', offline: true });
+  let step = await demoRun.run({ type: 'turn', text: starterNote });
+  assert.equal(step.id, 'unit');
+  step = await demoRun.run(tourActions.order(demoRun.state, step));
+  assert.equal(viewState(demoRun.state).visit.orders[0].id, demoRun.state.draft.orderId);
+  await demoRun.run({ type: 'turn', text: signerNote });
+  demoRun.reloaded = true;
+  step = await demoRun.run({ type: 'fixture' });
+  assert.equal(step.id, 'attest');
+  assert.equal(step.action, 'guide-attest');
+  assert.equal(viewState(demoRun.state).checks.find((check) => check.key === 'signature').ok, false);
 });

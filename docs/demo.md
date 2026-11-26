@@ -1,6 +1,6 @@
 # Live demo
 
-Choose **Start guided demo** in the browser for a two-minute walkthrough with a sample parser and simulated sync. The guide follows your progress and offers a reload while the draft is awaiting a signature. You can hide it or reopen it at any stage.
+Choose **Start guided demo** in the browser for a two-minute product tour with a sample parser and simulated sync. Each step dims the page, spotlights the real control and explains what to click and why. Click the highlighted control or press **Next** (or →). Next never ticks the evidence statements or the transfer approval for you. **Esc** skips the tour and **Show guide** resumes it at the same step.
 
 [Start the guided demo](https://guhanp09.github.io/offline-warranty-closeout/) · [Watch the live Salesforce handoff](https://guhanp09.github.io/offline-warranty-closeout/walkthrough/)
 
