@@ -10,7 +10,7 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const staticFiles = new Map([
   ['/', 'app/web/index.html'],
   ['/index.html', 'app/web/index.html'],
-  ...['app.mjs', 'ui.mjs', 'styles.css', 'client.mjs', 'mic.mjs', 'icon.svg'].map((name) => ['/app/web/' + name, 'app/web/' + name]),
+  ...['app.mjs', 'ui.mjs', 'guide.mjs', 'styles.css', 'client.mjs', 'mic.mjs', 'icon.svg'].map((name) => ['/app/web/' + name, 'app/web/' + name]),
   ...['actions.mjs', 'workflow.mjs', 'observations.mjs', 'sync.mjs', 'evidence.mjs'].map((name) => ['/app/core/' + name, 'app/core/' + name]),
   ...['procedure.mjs', 'visit.mjs'].map((name) => ['/fixtures/' + name, 'fixtures/' + name]),
 ]);

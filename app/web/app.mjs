@@ -1,9 +1,10 @@
 import { checks, editDraft } from '../core/workflow.mjs';
 import { encodeFile, fileLimit } from '../core/evidence.mjs';
 import { localClient, previewClient } from './client.mjs';
+import { guideStep, guideUi, repositoryUrl, welcomeUi } from './guide.mjs';
 import { microphone } from './mic.mjs';
 import {
-  checklistUi, connectionUi, diagnosticsUi, dialogFrame, headerUi, icon, orderUi, reviewUi,
+  checklistUi, connectionUi, diagnosticsUi, dialogFrame, headerUi, icon, orderUi, repairSummaryUi, reviewUi,
   signerNote, sourceUi, starterNote, threadUi, uploadUi,
 } from './ui.mjs';
 
@@ -12,9 +13,13 @@ const preview = document.body.dataset.mode === 'preview';
 const client = preview ? previewClient() : localClient();
 const dialog = $('dialog');
 const note = $('note');
+const layout = $('visit-layout');
+const narrowLayout = window.matchMedia('(max-width: 730px)');
+const guidePreference = 'warranty-closeout:guide';
 let state;
 let config;
 let busy;
+let guideEnabled = true;
 let choiceOpen = false;
 let recording = false;
 let transcribing = false;
@@ -51,16 +56,39 @@ function renderMic() {
     : transcribing ? 'Transcribing on this device…' : 'Service notes stay on this device.';
 }
 
+function arrangePanels() {
+  const checklistFirst = narrowLayout.matches && layout.hasAttribute('data-checklist-first');
+  const first = checklistFirst ? $('closeout') : $('conversation');
+  if (layout.firstElementChild !== first) layout.prepend(first);
+}
+
+narrowLayout.addEventListener('change', arrangePanels);
+
 function render() {
-  $('connection').innerHTML = connectionUi(state);
+  const showWelcome = preview && !state.visit;
+  const step = preview && state.visit && guideEnabled ? guideStep(state, config) : null;
+  const orders = orderUi(state, choiceOpen);
+  $('welcome').hidden = !showWelcome;
+  $('welcome').innerHTML = showWelcome ? welcomeUi(busy) : '';
+  $('visit').hidden = showWelcome;
+  $('visit').dataset.highlight = step?.highlight ?? '';
+  layout.toggleAttribute('data-checklist-first', Boolean(step && step.stage >= 2));
+  arrangePanels();
+  $('guide').hidden = !step;
+  $('guide').innerHTML = step ? guideUi(step, busy, orders) : '';
+  $('connection').innerHTML = showWelcome
+    ? `<a class="button button-header" href="${repositoryUrl}" target="_blank" rel="noreferrer">GitHub ${icon('external', 15)}</a>`
+    : (preview ? `<button type="button" class="button button-header" data-action="toggle-guide" aria-controls="guide" aria-expanded="${Boolean(step)}">${step ? 'Hide guide' : 'Show guide'}</button>` : '')
+      + connectionUi(state, !step);
   $('visit-header').innerHTML = headerUi(state, config);
   $('thread').innerHTML = threadUi(state, busy);
-  $('unit-options').innerHTML = orderUi(state, choiceOpen);
-  $('closeout').innerHTML = checklistUi(state, config, busy);
+  $('unit-options').innerHTML = step?.chooseUnit ? '' : orders;
+  $('closeout').innerHTML = checklistUi(state, config, busy, step?.action);
   $('runtime-label').textContent = config.mode === 'preview' ? 'Browser demo · Sample parser'
     : config.model ? config.model + ' · On-device model' : 'Local app · Sample parser';
   $('cache-state').innerHTML = state.visit
     ? '<button class="cache-tag" type="button" data-action="source">' + icon('check', 14) + '2 jobs &amp; source cached</button>' : '';
+  $('footer').hidden = showWelcome;
   $('footer').innerHTML = '<span>' + (config.remote === 'salesforce' ? 'Salesforce development org' : 'Synthetic visit · Simulated sync')
     + '</span><div><button type="button" data-action="diagnostics">Diagnostics</button>'
     + (state.visit && !(config.remote === 'salesforce' && state.outbox && state.outbox.status !== 'synced')
@@ -72,7 +100,7 @@ function render() {
   note.disabled = reading;
   const suggestions = [];
   if (state.visit && state.messages.length < 2) suggestions.push('<button type="button" class="suggestion" data-action="sample-note">Use example note</button>');
-  if (state.draft.orderId && !state.draft.attestation && !state.draft.file && !state.draft.fields.signatureUnavailable) {
+  if (state.draft.orderId && !state.draft.attestation && !state.draft.file && !state.draft.fields.signatureUnavailable && step?.action !== 'manager-left') {
     suggestions.push('<button type="button" class="suggestion" data-action="manager-left">The manager already left</button>');
   }
   $('suggestions').innerHTML = suggestions.join('');
@@ -81,11 +109,20 @@ function render() {
   renderMic();
 }
 
+function setGuide(enabled) {
+  guideEnabled = enabled;
+  localStorage.setItem(guidePreference, enabled ? 'on' : 'off');
+}
+
+function focusGuide() {
+  $('guide-heading')?.focus();
+}
+
 function fillDialog(kind) {
   const content = {
     source: () => sourceUi(state),
     diagnostics: () => diagnosticsUi(state),
-    review: () => reviewUi(state, config),
+    review: () => reviewUi(state, config, preview && guideEnabled),
     upload: () => uploadUi(state),
     reset: () => dialogFrame('Start a fresh visit?', '<div class="dialog-body"><p>This clears the current draft, conversation and evidence from this workspace.</p><div class="signature-actions"><button type="button" class="button button-quiet" data-action="close">Keep visit</button><button type="button" class="button button-primary" data-action="confirm-reset">Start over</button></div></div>'),
   };
@@ -130,6 +167,8 @@ function validatePreview() {
   try {
     const copy = structuredClone(state);
     editDraft(copy, readEdits(form));
+    const summary = $('repair-summary');
+    if (summary) summary.innerHTML = repairSummaryUi(copy.draft.fields);
     const missing = checks(copy).filter((item) => !item.ok);
     $('approve').disabled = missing.length > 0 || !$('approve-consent').checked;
     label.textContent = missing.length ? missing[0].detail : 'The checklist is complete.';
@@ -139,11 +178,12 @@ function validatePreview() {
   }
 }
 
-async function send(text = note.value) {
-  if (!text.trim() || busy) return;
+async function send(text = note.value, focusNote = true) {
+  if (!text.trim() || busy) return false;
   const success = await dispatch('turn', { text });
   if (success) note.value = '';
-  note.focus();
+  if (focusNote) note.focus();
+  return success;
 }
 
 $('composer').addEventListener('submit', (event) => {
@@ -171,19 +211,41 @@ document.addEventListener('click', async (event) => {
   if (!target || !state) return;
   const action = target.dataset.action;
   if (busy && !['source', 'diagnostics', 'close'].includes(action)) return;
+  const inGuide = Boolean(target.closest('#guide'));
+  let advanced = false;
   switch (action) {
+    case 'start-guided':
+    case 'start-free':
+      setGuide(action === 'start-guided');
+      if (await dispatch('prepare')) (guideEnabled ? $('guide-heading') : $('visit-heading'))?.focus();
+      break;
+    case 'toggle-guide':
+      setGuide(!guideEnabled);
+      render();
+      if (guideEnabled) focusGuide();
+      else $('connection').querySelector('[data-action="toggle-guide"]')?.focus();
+      break;
     case 'prepare':
       await dispatch('prepare');
       break;
     case 'toggle-connection':
-      await dispatch('connection', { offline: !state.offline });
+      advanced = await dispatch('connection', { offline: !state.offline });
+      break;
+    case 'guide-note':
+      advanced = await send(starterNote, false);
+      break;
+    case 'guide-attest':
+      $('attest')?.querySelector('input')?.focus();
+      break;
+    case 'guide-reload':
+      window.location.reload();
       break;
     case 'sample-note':
       note.value = starterNote;
       note.focus();
       break;
     case 'manager-left':
-      await send(signerNote);
+      advanced = await send(signerNote, !inGuide);
       break;
     case 'change-order':
       choiceOpen = !choiceOpen;
@@ -192,10 +254,10 @@ document.addEventListener('click', async (event) => {
       break;
     case 'order':
       choiceOpen = false;
-      await dispatch('order', { orderId: target.dataset.order });
+      advanced = await dispatch('order', { orderId: target.dataset.order });
       break;
     case 'fixture':
-      await dispatch('fixture');
+      advanced = await dispatch('fixture');
       break;
     case 'view-evidence': {
       const file = state.draft.file;
@@ -217,19 +279,25 @@ document.addEventListener('click', async (event) => {
       dialog.close();
       break;
     case 'refresh':
-      await dispatch('refresh');
+      advanced = await dispatch('refresh');
       break;
     case 'sync':
       await dispatch('sync', { dropAck: $('drop-ack')?.checked === true });
+      break;
+    case 'guide-sync':
+    case 'guide-drop-response':
+      if (preview) advanced = await dispatch('sync', { dropAck: config.failpoint && action === 'guide-drop-response' });
       break;
     case 'confirm-reset':
       if (await dispatch('reset', { confirm: true })) {
         note.value = '';
         choiceOpen = false;
         dialog.close();
+        if (preview) $('welcome').querySelector('[data-action="start-guided"]')?.focus();
       }
       break;
   }
+  if (inGuide && advanced) focusGuide();
 });
 
 document.addEventListener('input', (event) => {
@@ -249,7 +317,7 @@ document.addEventListener('submit', async (event) => {
   if (busy) return;
   const data = new FormData(form);
   if (form.id === 'attest') {
-    await dispatch('attest', { signed: data.has('signed'), belongs: data.has('belongs') });
+    if (await dispatch('attest', { signed: data.has('signed'), belongs: data.has('belongs') })) focusGuide();
   } else if (form.id === 'upload') {
     const file = data.get('file');
     if (!file?.size || file.size > fileLimit) return notify('Choose a document under 2 MB.', true);
@@ -259,7 +327,10 @@ document.addEventListener('submit', async (event) => {
     if (await dispatch('upload', { name: file.name, mime, data: encodeFile(bytes), orderId: data.get('order') })) dialog.close();
   } else if (form.id === 'review' && !state.outbox) {
     if (event.submitter?.value === 'approve') {
-      if (await dispatch('approve', { fields: readEdits(form), consent: $('approve-consent').checked })) dialog.close();
+      if (await dispatch('approve', { fields: readEdits(form), consent: $('approve-consent').checked })) {
+        dialog.close();
+        focusGuide();
+      }
     } else if (await dispatch('edit', { fields: readEdits(form) })) {
       fillDialog('review');
       notify('Edits saved on this device.');
@@ -268,6 +339,7 @@ document.addEventListener('submit', async (event) => {
 });
 
 try {
+  if (preview) guideEnabled = localStorage.getItem(guidePreference) !== 'off';
   ({ state, config } = await client.load());
   render();
   if (preview && 'serviceWorker' in navigator) {

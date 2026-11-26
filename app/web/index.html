@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <meta name="description" content="Try an offline field service closeout for two same-model ice machines.">
+  <meta name="description" content="Try a guided offline warranty closeout. Match the unit, catch a missing signature, and verify the handoff.">
   <title>Offline Warranty Closeout</title>
   <link rel="icon" href="./app/web/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./app/web/styles.css">
@@ -20,32 +20,36 @@
     </div>
   </header>
   <main class="workspace">
-    <div id="visit-header"></div>
-    <div class="layout">
-      <section class="card conversation" aria-labelledby="conversation-heading">
-        <div class="card-head">
-          <div class="card-title">
-            <span class="tile" id="conversation-icon" aria-hidden="true"></span>
-            <div><h2 id="conversation-heading">Service notes</h2><p id="runtime-label">Loading workspace…</p></div>
-          </div>
-          <div id="cache-state"></div>
-        </div>
-        <div id="thread" class="thread" role="log" aria-live="polite"></div>
-        <div id="unit-options"></div>
-        <div id="composer-area" class="composer-area" hidden>
-          <div id="suggestions" class="suggestions"></div>
-          <form id="composer" class="composer">
-            <label for="note" class="sr-only">Service note</label>
-            <textarea id="note" name="note" rows="2" maxlength="1500" placeholder="Describe what happened at the machine…"></textarea>
-            <div class="composer-actions">
-              <button type="button" id="mic" class="button button-quiet" title="Record and transcribe a service note" hidden></button>
-              <button type="submit" id="send" class="button button-primary">Send</button>
+    <section id="welcome" class="welcome" aria-labelledby="welcome-heading" hidden></section>
+    <div id="visit">
+      <div id="visit-header"></div>
+      <section id="guide" class="guide" aria-labelledby="guide-heading" hidden></section>
+      <div class="layout" id="visit-layout">
+        <section class="card conversation" id="conversation" aria-labelledby="conversation-heading">
+          <div class="card-head">
+            <div class="card-title">
+              <span class="tile" id="conversation-icon" aria-hidden="true"></span>
+              <div><h2 id="conversation-heading">Service notes</h2><p id="runtime-label">Loading workspace…</p></div>
             </div>
-          </form>
-          <p id="composer-hint" class="composer-hint">Service notes stay on this device.</p>
-        </div>
-      </section>
-      <aside id="closeout" class="card closeout" aria-labelledby="closeout-heading"></aside>
+            <div id="cache-state"></div>
+          </div>
+          <div id="thread" class="thread" role="log" aria-live="polite"></div>
+          <div id="unit-options"></div>
+          <div id="composer-area" class="composer-area" hidden>
+            <div id="suggestions" class="suggestions"></div>
+            <form id="composer" class="composer">
+              <label for="note" class="sr-only">Service note</label>
+              <textarea id="note" name="note" rows="2" maxlength="1500" placeholder="Describe what happened at the machine…"></textarea>
+              <div class="composer-actions">
+                <button type="button" id="mic" class="button button-quiet" title="Record and transcribe a service note" hidden></button>
+                <button type="submit" id="send" class="button button-primary">Send</button>
+              </div>
+            </form>
+            <p id="composer-hint" class="composer-hint">Service notes stay on this device.</p>
+          </div>
+        </section>
+        <aside id="closeout" class="card closeout" aria-labelledby="closeout-heading"></aside>
+      </div>
     </div>
     <div id="footer" class="footer"></div>
   </main>

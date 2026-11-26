@@ -5,7 +5,7 @@ import { dirname } from 'node:path';
 const project = new URL('../', import.meta.url);
 const dist = new URL('../dist/', import.meta.url);
 const assets = [
-  ...['app.mjs', 'client.mjs', 'mic.mjs', 'ui.mjs', 'styles.css', 'icon.svg'].map((name) => 'app/web/' + name),
+  ...['app.mjs', 'client.mjs', 'mic.mjs', 'ui.mjs', 'guide.mjs', 'styles.css', 'icon.svg'].map((name) => 'app/web/' + name),
   ...['actions.mjs', 'evidence.mjs', 'observations.mjs', 'sync.mjs', 'workflow.mjs'].map((name) => 'app/core/' + name),
   ...['visit.mjs', 'procedure.mjs', 'signed-work-order-17042.pdf', 'signed-work-order-17086.pdf'].map((name) => 'fixtures/' + name),
 ];

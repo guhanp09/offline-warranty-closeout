@@ -35,10 +35,10 @@ const button = (action, label, style = 'button-quiet', glyph = '') =>
 export const starterNote = 'The ice machine wasn’t making ice. I changed the pump, ran a cycle, and it’s making ice again. Took about 40 minutes. Can I wrap up?';
 export const signerNote = 'The manager already left.';
 
-export function connectionUi(state) {
+export function connectionUi(state, showToggle = true) {
   const status = state.offline ? 'Offline' : 'Online';
   return `<span class="connection-chip ${state.offline ? 'is-offline' : ''}">${icon(state.offline ? 'offline' : 'wifi', 17)}${status}</span>
-    ${state.visit ? button('toggle-connection', state.offline ? 'Go online' : 'Work offline', 'button-header') : ''}`;
+    ${state.visit && showToggle ? button('toggle-connection', state.offline ? 'Go online' : 'Work offline', 'button-header') : ''}`;
 }
 
 export function headerUi(state, config) {
@@ -49,7 +49,7 @@ export function headerUi(state, config) {
   return `<div class="visit-header">
     <div>
       <p class="visit-kicker">Field service <span> / </span> ${config.mode === 'preview' ? 'Browser demo' : 'Demo visit'}</p>
-      <h1>${esc(state.visit?.title ?? 'North Dock Café')}</h1>
+      <h1 id="visit-heading" tabindex="-1">${esc(state.visit?.title ?? 'North Dock Café')}</h1>
       <p class="visit-description">${order ? esc(order.model + '  ·  ' + order.ticket + '  ·  ' + order.location) : 'Hoshizaki ice machines  ·  Parts &amp; labor closeout'}</p>
     </div>
     <span class="status status-${tone}"><span class="status-dot"></span>${esc(status)}</span>
@@ -82,7 +82,7 @@ export function orderUi(state, show) {
   </div>`;
 }
 
-export function checklistUi(state, config, busy) {
+export function checklistUi(state, config, busy, guideAction) {
   const order = selectedOrder(state);
   const file = state.draft.file;
   const checks = state.checks;
@@ -101,7 +101,7 @@ export function checklistUi(state, config, busy) {
       <li>${icon('clipboard', 17)} Repair, parts and labor</li>
     </ul>
   </div>`;
-  if (state.outbox) return header + transferUi(state, config, busy);
+  if (state.outbox) return header + transferUi(state, config, busy, Boolean(guideAction));
 
   const source = retrieveProcedure(state, 'signature');
   const signaturePanel = `<div class="signature ${signature.ok ? 'signature-ok' : ''}" id="signature-panel">
@@ -119,7 +119,7 @@ export function checklistUi(state, config, busy) {
       <button type="submit" class="button button-primary">Confirm evidence</button>
       </form>` : ''}
     ${order && !state.draft.orderNeedsConfirmation && (!correctFile || signature.ok) ? `<div class="signature-actions">
-      ${!signature.ok ? button('fixture', 'Use example PDF', 'button-primary', 'doc') : ''}
+      ${!signature.ok && guideAction !== 'fixture' ? button('fixture', 'Use example PDF', 'button-primary', 'doc') : ''}
       ${button('upload', signature.ok ? 'Replace file' : 'Attach a file', 'button-quiet', 'upload')}
     </div>` : ''}
   </div>`;
@@ -140,7 +140,7 @@ export function checklistUi(state, config, busy) {
   </div>`;
 }
 
-function transferUi(state, config, busy) {
+function transferUi(state, config, busy, guided) {
   const { status, attempts, receipt, error } = state.outbox;
   const real = config.remote === 'salesforce';
   if (status === 'synced') return `<div class="check-content">
@@ -157,15 +157,16 @@ function transferUi(state, config, busy) {
   </div>`;
   const refreshable = ['JOB_CHANGED', 'SOURCE_CHANGED'].includes(error?.code);
   const stateLabel = status === 'review' ? 'Needs review' : status === 'auth' ? 'Sign-in needed' : 'Pending sync';
+  const controls = state.offline ? button('toggle-connection', 'Go online', 'button-primary', 'wifi')
+    : refreshable ? button('refresh', 'Refresh visit for review', 'button-primary', 'refresh')
+      : status === 'review' ? '' : button('sync', busy === 'sync' ? 'Verifying…' : attempts ? 'Retry sync' : real ? 'Sync to Salesforce' : 'Simulate sync', 'button-primary', 'refresh');
   return `<div class="check-content">
     <div class="transfer">
       <span class="signature-icon">${icon(status === 'review' ? 'alert' : 'clock', 22)}</span>
       <h3>Saved on device · ${stateLabel}</h3>
       <p>${error ? esc(error.message) : state.offline ? 'Reconnect when you’re ready to send the approved closeout.' : 'Send the approved work order, repair details and signed PDF.'}</p>
-      ${config.failpoint && !attempts && !state.offline ? '<label class="failpoint"><input type="checkbox" id="drop-ack"> Test a lost sync response</label>' : ''}
-      <div class="signature-actions">${state.offline ? button('toggle-connection', 'Go online', 'button-primary', 'wifi')
-      : refreshable ? button('refresh', 'Refresh visit for review', 'button-primary', 'refresh')
-        : status === 'review' ? '' : button('sync', busy === 'sync' ? 'Verifying…' : attempts ? 'Retry sync' : real ? 'Sync to Salesforce' : 'Simulate sync', 'button-primary', 'refresh')}</div>
+      ${!guided && config.failpoint && !attempts && !state.offline ? '<label class="failpoint"><input type="checkbox" id="drop-ack"> Test a lost sync response</label>' : ''}
+      ${controls && (!guided || refreshable) ? '<div class="signature-actions">' + controls + '</div>' : ''}
     </div>
     ${button('review', 'View approved closeout', 'button-quiet', 'doc')}
   </div>`;
@@ -205,7 +206,16 @@ export function uploadUi(state) {
   </form>`);
 }
 
-export function reviewUi(state, config) {
+export function repairSummaryUi(fields) {
+  const parts = fields.noParts ? 'No parts installed' : fields.partQty + ' × ' + fields.partNumber;
+  const rows = [
+    ['Problem', fields.complaint], ['Repair', fields.remedy], ['Test', fields.outcome],
+    ['Labor', fields.laborMinutes + ' min'], ['Parts', parts],
+  ];
+  return rows.map(([label, value]) => `<div><dt>${label}</dt><dd>${esc(value)}</dd></div>`).join('');
+}
+
+export function reviewUi(state, config, compact = false) {
   const order = selectedOrder(state);
   const { fields, origins, file, attestation } = state.draft;
   const locked = !!state.outbox;
@@ -214,27 +224,33 @@ export function reviewUi(state, config) {
   const origin = (key) => origins[key] ? ' <small class="field-origin">' + esc(origins[key]) + '</small>' : '';
   const input = (key, label, kind, options = '') => `<label><span>${label}${origin(key)}</span><input${attr(key)} type="${kind}" value="${esc(fields[key])}" ${options}></label>`;
   const note = (key, label) => `<label class="span-all"><span>${label}${origin(key)}</span><textarea${attr(key)} maxlength="500" rows="2">${esc(fields[key])}</textarea></label>`;
+  const formFields = `<div class="form-grid">
+    ${input('failedOn', 'Failure date', 'date')}
+    ${input('repairedOn', 'Repair date', 'date')}
+    ${note('complaint', 'Reported problem')}
+    ${note('remedy', 'Completed repair')}
+    ${note('outcome', 'Operational check')}
+    ${input('laborMinutes', 'Labor minutes', 'number', 'min="0.01" max="1440" step="0.01"')}
+    <label class="checkbox-field"><input type="checkbox" name="noParts" ${fields.noParts ? 'checked' : ''}${disabled}> No parts installed</label>
+    ${fields.noParts && locked ? '' : input('partNumber', 'Part number', 'text', 'maxlength="80"')}
+    ${fields.noParts && locked ? '' : input('partQty', 'Part quantity', 'number', 'min="1" max="999" step="1"')}
+    ${fields.exception || !locked ? note('exception', 'Coordinator exception, if any') : ''}
+  </div>`;
+  const showSummary = compact && (locked || state.checks.every((check) => check.ok));
+  const repairDetails = showSummary ? `<div class="review-fields">
+    <dl class="review-summary" id="repair-summary">${repairSummaryUi(fields)}</dl>
+    <details><summary>${locked ? 'View all closeout fields' : 'View or edit all fields'}</summary>${formFields}</details>
+  </div>` : formFields;
   return dialogFrame(locked ? 'Approved closeout' : 'Review closeout', `<form id="review" class="dialog-body">
     <div class="review-identity">
       ${locked ? `<div><b>${esc(order?.ticket)}</b> · ${esc(order?.serial)} · ${esc(order?.model)}</div>`
-      : `<label>Work order &amp; serial <small class="field-origin">cached job</small>
+      : `<label><span>Work order &amp; serial <small class="field-origin">cached job</small></span>
         <select id="review-order" aria-label="Work order and serial">
           ${state.visit.orders.map((item) => `<option value="${esc(item.id)}" ${item.id === order?.id ? 'selected' : ''}>${esc(item.ticket)} · ${esc(item.serial)} · ${esc(item.location)}</option>`).join('')}
         </select></label>`}
       <p>${esc(order?.model)} · ${esc(Object.values(order?.customer ?? {}).join(', '))}</p>
     </div>
-    <div class="form-grid">
-      ${input('failedOn', 'Failure date', 'date')}
-      ${input('repairedOn', 'Repair date', 'date')}
-      ${note('complaint', 'Reported problem')}
-      ${note('remedy', 'Completed repair')}
-      ${note('outcome', 'Operational check')}
-      ${input('laborMinutes', 'Labor minutes', 'number', 'min="0.01" max="1440" step="0.01"')}
-      <label class="checkbox-field"><input type="checkbox" name="noParts" ${fields.noParts ? 'checked' : ''}${disabled}> No parts installed</label>
-      ${fields.noParts && locked ? '' : input('partNumber', 'Part number', 'text', 'maxlength="80"')}
-      ${fields.noParts && locked ? '' : input('partQty', 'Part quantity', 'number', 'min="1" max="999" step="1"')}
-      ${fields.exception || !locked ? note('exception', 'Coordinator exception, if any') : ''}
-    </div>
+    ${repairDetails}
     <div class="review-evidence">
       ${icon('signature', 21)}<div><strong>Signed work order</strong><p>${file ? esc(file.name) + (attestation ? ' · Attested by technician' : ' · Confirmation pending') : 'Awaiting attachment'}</p></div>
       ${file ? button('view-evidence', 'Open', 'button-text', 'external') : ''}

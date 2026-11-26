@@ -1,20 +1,21 @@
 # Offline Warranty Closeout
 
-A field-service assistant that catches missing warranty evidence while an ice-machine technician is still on site. It resolves which unit was repaired, opens the applicable Hoshizaki requirement offline, and saves an approved package for a Salesforce warranty coordinator.
+A field-service assistant that catches a missing customer signature while the technician is still on site. It ties the repair to the right machine and verifies the Salesforce handoff after reconnecting.
 
-**[Try the two-minute browser demo](https://guhanp09.github.io/offline-warranty-closeout/)** · [Watch the live Salesforce walkthrough](https://github.com/guhanp09/offline-warranty-closeout/releases/tag/v1.0.1) · [Run on Apple silicon](#run-on-apple-silicon)
+**[Start the guided demo](https://guhanp09.github.io/offline-warranty-closeout/)** · [Watch the 75-second Salesforce walkthrough](https://github.com/guhanp09/offline-warranty-closeout/releases/tag/v1.0.1)
 
-Download the visit, choose **Work offline**, and send the example note. Pick one of the two serials and tell the assistant the manager already left. Reload to see **Awaiting signature** survive. Use the example signed PDF to finish the closeout and try the lost-response retry. The browser demo uses a sample parser and simulated sync.
+About 2 minutes. No install or sign-in. The demo uses sample data and simulated sync.
 
-**Measured on Apple M1 Pro:** 41 / 41 repair extraction checks, 12 / 12 correct next actions, and 2.62 s median local inference across 16 warm turns. [Evaluation](docs/evaluation.md)
+[![The guided demo shows an offline draft awaiting a customer signature, with the Hoshizaki requirement cited beside the repair notes](docs/awaiting-signature.webp)](https://guhanp09.github.io/offline-warranty-closeout/)
 
-**Verified in Salesforce:** after an intentionally dropped response, retry found the same closeout and one signed PDF linked to the correct Work Order. [Live read-back](docs/evaluation.md#live-salesforce-read-back)
+In the demo, you’ll identify one of two same-model machines, reload an offline draft that’s awaiting a signature, and recover from a lost sync response.
 
-[![Offline closeout showing the missing customer signature and the Hoshizaki source citation](docs/awaiting-signature.webp)](https://guhanp09.github.io/offline-warranty-closeout/)
+## Results
 
-## Verification
+- **Live Salesforce.** After an intentionally dropped response, retry found the same closeout and one signed PDF on the correct Work Order. [Read-back evidence](docs/evaluation.md#live-salesforce-read-back)
+- **On-device model.** Qwen3 4B passed 41 / 41 repair extraction checks and selected 12 / 12 correct next actions. Median inference was 2.62 s across 16 warm turns on Apple M1 Pro. [Evaluation](docs/evaluation.md)
 
-The Mac build uses Qwen3 4B for repair extraction and Whisper for push-to-talk. The evaluation compares native tool output with schema-constrained calls on the same 12 labeled conversations. The controlled offline test blocks IPv4 and IPv6 egress while app and model use loopback, restarts the app twice, and checks the saved draft and approved outbox. [Results and reproduction](docs/evaluation.md) · [GitHub Actions](https://github.com/guhanp09/offline-warranty-closeout/actions/workflows/ci.yml)
+The Mac build uses Whisper for push-to-talk. The controlled offline test blocks IPv4 and IPv6 egress, restarts the app twice, and checks that the saved draft and approved outbox survive. [Reproduce the checks](docs/evaluation.md) · [GitHub Actions](https://github.com/guhanp09/offline-warranty-closeout/actions/workflows/ci.yml)
 
 ## Run on Apple silicon
 
