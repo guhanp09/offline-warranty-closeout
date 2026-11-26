@@ -1,8 +1,8 @@
 # Connect a personal Salesforce org
 
-Use a Developer Edition or scratch org with enabled Work Orders, API access, and Salesforce Files. The Field Service Developer Edition comes with the feature enabled. Use a system administrator for the synthetic seeding and assign the included permission set for the closeout fields. In Setup, check **Field Service Settings** if Work Orders are unavailable. [Field Service Developer Edition](https://trailhead.salesforce.com/promo/orgs/fsc_managed) · [Work Order setup](https://help.salesforce.com/s/articleView?id=sf.fs_manage_wo.htm&type=5)
+Use a Developer Edition, a Trailhead Playground, or a scratch org with enabled Work Orders, API access, and Salesforce Files. Use a system administrator for the synthetic seeding and assign the included permission set for the closeout fields. In Setup, check **Field Service Settings** if Work Orders are unavailable. [Create a Trailhead Playground](https://trailhead.salesforce.com/content/learn/modules/trailhead_playground_management/create-a-trailhead-playground) · [Work Order setup](https://help.salesforce.com/s/articleView?id=sf.fs_manage_wo.htm&type=5)
 
-Install Salesforce CLI using the [official installation guide](https://developer.salesforce.com/tools/salesforcecli). Launch the official OAuth flow with your org’s My Domain URL. Approve access in the browser. The alias is used by the app to read a local CLI session at the time of each sync.
+Install a current Salesforce CLI release with `org auth show-access-token`. Launch the official OAuth flow with your org’s My Domain URL and approve access in the browser. The app uses the alias to read the org endpoint and refresh its local CLI session for each sync attempt. The token stays in process memory. [Salesforce CLI installation](https://developer.salesforce.com/tools/salesforcecli) · [CLI credential commands](https://developer.salesforce.com/docs/platform/sfdx-dev/guide/sfdx-dev-auth-view-secrets.html)
 
 ```sh
 sf org login web --alias owc-dev --instance-url https://YOUR-DOMAIN.my.salesforce.com

@@ -32,3 +32,14 @@ npm run check:offline
 The offline check ran separate app and Ollama processes under a macOS network sandbox. External IPv4 and IPv6 probes both failed with `EPERM`. The test transcribed a synthetic audio sample with Whisper base.en, ran the model and signature gate, attached and attested a PDF, then verified SQLite state across two server restarts. The Chrome browser demo also retained the draft and cached source through a reload with Chrome offline and verified its simulated receipt after the lost-response retry.
 
 Salesforce REST integration tests use an in-process test double for the response-lost, expired-session, changed-Work-Order, corrupted-file and concurrent-writer cases. [Integration tests](../tests/salesforce.test.mjs) · [Live verification commands](salesforce.md)
+
+## Live Salesforce read-back
+
+On 26 November 2026, the full metadata package deployed to a fresh Trailhead Developer Edition Playground with Salesforce CLI 2.159.7. The app downloaded two actual Work Orders for synthetic machines. The technician selected `DEMO-KM-17042`, saved the unsigned draft offline, and attached and attested the synthetic PDF before approving the package for `WO-00000001`.
+
+| Read-back | Device attempt | Closeout records | Linked files |
+| --- | ---: | ---: | ---: |
+| After Salesforce accepted the write and the test dropped the response | 1 | 1 | 1 |
+| After retry verified and marked the outbox synced | 2 | 1 | 1 |
+
+Both reads returned the same closeout and Work Order. The downloaded PDF matched the approved file's SHA-256, `6686d82cf6f27c29bfa6b80b969a9e70c3a17fdaacb843ead69355c23c0f2dd4`. The walkthrough shows the **Ready for coordinator review** record and its **Files (1)** list in Salesforce. [Live walkthrough](https://github.com/guhanp09/offline-warranty-closeout/releases/tag/v1.0.1) · [Reproduce the live test](salesforce.md#verify-the-live-write)

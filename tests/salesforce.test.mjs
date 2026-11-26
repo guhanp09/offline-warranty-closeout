@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { applyAction } from '../app/core/actions.mjs';
 import { sampleObservations } from '../app/core/observations.mjs';
 import { syncApproved } from '../app/core/sync.mjs';
 import { approve, attestEvidence, conversationTurn, newState, prepare, refreshVisit } from '../app/core/workflow.mjs';
-import { salesforceClient, salesforceRemote } from '../app/server/salesforce.mjs';
+import { salesforceClient, salesforceRemote, sessionFor } from '../app/server/salesforce.mjs';
 import { cacheProcedure } from '../fixtures/procedure.mjs';
 import { demoVisit } from '../fixtures/visit.mjs';
 
@@ -16,6 +18,27 @@ const sf = {
   version: '068000000000001AAA',
 };
 const stamp = '2026-11-26T10:00:00.000+0000';
+
+test('Salesforce session gets the token from the dedicated CLI command', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'owc-sf-cli-'));
+  try {
+    const binary = join(dir, 'sf');
+    await writeFile(binary, '#!/usr/bin/env node\n' + [
+      'const args = process.argv.slice(2).join(" ");',
+      'const flags = " --target-org demo --json";',
+      'let result;',
+      'if (args === "org display" + flags) result = {instanceUrl:"https://demo.my.salesforce.com",accessToken:"[REDACTED]"};',
+      'if (args === "org auth show-access-token" + flags) result = {accessToken:"synthetic-token"};',
+      'if (!result) process.exit(2);',
+      'console.log(JSON.stringify({result}));',
+    ].join('\n'), { mode: 0o700 });
+    assert.deepEqual(await sessionFor('demo', binary), {
+      origin: 'https://demo.my.salesforce.com', token: 'synthetic-token',
+    });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
 
 async function approved() {
   const visit = demoVisit();

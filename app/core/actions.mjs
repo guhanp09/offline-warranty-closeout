@@ -60,7 +60,7 @@ export async function applyAction(state, action, {
       return approve(state, action.consent, id());
     case 'sync':
       if (action.dropAck && !allowFailpoint) throw new WorkflowError('The lost response test is disabled.');
-      return syncApproved(state, remote, { dropAck: action.dropAck === true });
+      return syncApproved(state, typeof remote === 'function' ? remote() : remote, { dropAck: action.dropAck === true });
     default:
       throw new WorkflowError('Unknown action.');
   }

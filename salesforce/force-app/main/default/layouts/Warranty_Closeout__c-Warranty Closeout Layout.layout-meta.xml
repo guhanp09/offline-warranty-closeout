@@ -98,5 +98,5 @@
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
-    <relatedLists><relatedList>RelatedContent</relatedList></relatedLists>
+    <relatedLists><relatedList>RelatedFileList</relatedList></relatedLists>
 </Layout>

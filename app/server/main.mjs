@@ -16,11 +16,15 @@ const data = resolve(process.env.WC_DATA_DIR || '.data');
 const port = Number(process.env.WC_PORT ?? 4173);
 const store = openStore(resolve(data, profile + '.sqlite'));
 const client = async () => salesforceClient(await sessionFor(org, process.env.WC_SF_BIN));
-const realRemote = {
-  async read(submission) { return salesforceRemote(await client()).read(submission); },
-  async checkJob(submission) { return salesforceRemote(await client()).checkJob(submission); },
-  async commit(submission, file) { return salesforceRemote(await client()).commit(submission, file); },
-};
+function realRemote() {
+  let session;
+  const remote = () => session ??= client().then(salesforceRemote);
+  return {
+    async read(submission) { return (await remote()).read(submission); },
+    async checkJob(submission) { return (await remote()).checkJob(submission); },
+    async commit(submission, file) { return (await remote()).commit(submission, file); },
+  };
+}
 const config = {
   mode: demo ? 'sample' : 'local',
   remote: org ? 'salesforce' : 'simulation',

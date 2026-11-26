@@ -2,19 +2,19 @@
 
 A field-service assistant that catches missing warranty evidence while an ice-machine technician is still on site. It resolves which unit was repaired, opens the applicable Hoshizaki requirement offline, and saves an approved package for a Salesforce warranty coordinator.
 
-**[Try the two-minute browser demo](https://guhanp09.github.io/offline-warranty-closeout/)** · [Watch the walkthrough](https://github.com/guhanp09/offline-warranty-closeout/releases/tag/v1.0.0) · [Run on Apple silicon](#run-on-apple-silicon)
+**[Try the two-minute browser demo](https://guhanp09.github.io/offline-warranty-closeout/)** · [Watch the live Salesforce walkthrough](https://github.com/guhanp09/offline-warranty-closeout/releases/tag/v1.0.1) · [Run on Apple silicon](#run-on-apple-silicon)
 
 Download the visit, choose **Work offline**, and send the example note. Pick one of the two serials and tell the assistant the manager already left. Reload to see **Awaiting signature** survive. Use the example signed PDF to finish the closeout and try the lost-response retry. The browser demo uses a sample parser and simulated sync.
 
 **Measured on Apple M1 Pro:** 41 / 41 repair extraction checks, 12 / 12 correct next actions, and 2.62 s median local inference across 16 warm turns. [Evaluation](docs/evaluation.md)
+
+**Verified in Salesforce:** after an intentionally dropped response, retry found the same closeout and one signed PDF linked to the correct Work Order. [Live read-back](docs/evaluation.md#live-salesforce-read-back)
 
 [![Offline closeout showing the missing customer signature and the Hoshizaki source citation](docs/awaiting-signature.webp)](https://guhanp09.github.io/offline-warranty-closeout/)
 
 ## Verification
 
 The Mac build uses Qwen3 4B for repair extraction and Whisper for push-to-talk. The evaluation compares native tool output with schema-constrained calls on the same 12 labeled conversations. The controlled offline test blocks IPv4 and IPv6 egress while app and model use loopback, restarts the app twice, and checks the saved draft and approved outbox. [Results and reproduction](docs/evaluation.md) · [GitHub Actions](https://github.com/guhanp09/offline-warranty-closeout/actions/workflows/ci.yml)
-
-Live Salesforce read-back is pending a Field Service development org. The adapter’s retry, changed-job and file-integrity checks run in CI against a test double. [Salesforce setup](docs/salesforce.md)
 
 ## Run on Apple silicon
 

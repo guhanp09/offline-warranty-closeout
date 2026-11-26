@@ -22,15 +22,20 @@ function authError() {
 
 export async function sessionFor(alias, binary = 'sf') {
   try {
-    const { stdout } = await run(binary, ['org', 'display', '--target-org', alias, '--json'], {
-      timeout: 20_000, maxBuffer: 256_000,
-      env: { ...process.env, SF_DISABLE_TELEMETRY: 'true' },
-    });
-    const result = JSON.parse(stdout).result;
-    const url = new URL(result.instanceUrl);
+    const cli = async (...command) => {
+      const { stdout } = await run(binary, [...command, '--target-org', alias, '--json'], {
+        timeout: 20_000, maxBuffer: 256_000,
+        env: { ...process.env, SF_DISABLE_TELEMETRY: 'true' },
+      });
+      return JSON.parse(stdout).result;
+    };
+    const { instanceUrl } = await cli('org', 'display');
+    const url = new URL(instanceUrl);
     if (url.protocol !== 'https:' || !/^[a-z0-9.-]+\.(?:salesforce|force)\.com$/i.test(url.hostname)
-      || url.username || url.password || typeof result.accessToken !== 'string') throw authError();
-    return { origin: url.origin, token: result.accessToken };
+      || url.username || url.password) throw authError();
+    const { accessToken } = await cli('org', 'auth', 'show-access-token');
+    if (typeof accessToken !== 'string' || !/^\S+$/.test(accessToken)) throw authError();
+    return { origin: url.origin, token: accessToken };
   } catch {
     throw authError();
   }
